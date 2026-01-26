@@ -9,13 +9,13 @@ export class AuthController {
 
   @Post('sign-up')
   async signUp(@Body() signUpDto: SignUpDto) {
-    const user = await this.authService.signUp(signUpDto);
-    return { message: 'User created successfully', data: { user } };
+    const result = await this.authService.signUp(signUpDto);
+    return { message: 'User created successfully', data: result };
   }
 
   @Post('sign-in')
   async signIn(@Body() signInDto: SignInDto) {
-    const token = await this.authService.signIn(signInDto);
-    return { message: 'User signed in successfully', data: { token } };
+    const result = await this.authService.signIn(signInDto);
+    return { message: 'User signed in successfully', data: { accessToken: result } };
   }
 }

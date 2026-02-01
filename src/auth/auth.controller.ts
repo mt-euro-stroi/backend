@@ -1,7 +1,12 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 import { AuthService } from './auth.service';
-import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
+import { SignUpDto } from './dto/sign-up.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { EmailVerifiedGuard } from 'src/common/guards/email-verified.guard';
+
 
 @Controller('auth')
 export class AuthController {
@@ -9,13 +14,29 @@ export class AuthController {
 
   @Post('sign-up')
   async signUp(@Body() signUpDto: SignUpDto) {
-    const result = await this.authService.signUp(signUpDto);
-    return { message: 'User created successfully', data: result };
+    return await this.authService.signUp(signUpDto);
   }
 
   @Post('sign-in')
   async signIn(@Body() signInDto: SignInDto) {
-    const result = await this.authService.signIn(signInDto);
-    return { message: 'User signed in successfully', data: { accessToken: result } };
+    return await this.authService.signIn(signInDto);
+  }
+
+  @Post('verify-email')
+  @UseGuards(AuthGuard)
+  async verifyEmail(
+    @Req() req: Request & { user?: any },
+    @Body() verifyEmailDto: VerifyEmailDto
+  ) {
+    return await this.authService.verifyEmail(verifyEmailDto, req.user);
+  }
+
+  @Patch('change-password')
+  @UseGuards(AuthGuard, EmailVerifiedGuard)
+  async changePassword(
+    @Req() req: Request & { user?: any },
+    @Body() changePasswordDto: ChangePasswordDto
+  ) {
+    return await this.authService.changePassword(changePasswordDto, req.user);
   }
 }

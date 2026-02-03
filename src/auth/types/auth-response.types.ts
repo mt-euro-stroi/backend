@@ -1,9 +1,10 @@
-export interface BaseAuthResponse {
-  message: string;
-}
+import type {
+  ServiceDataResponse,
+  ServiceMessageResponse,
+} from 'src/common/types/service-response.types';
 
-export interface AuthWithTokenResponse extends BaseAuthResponse {
-  data: {
-    accessToken: string;
-  };
-}
+export interface BaseAuthResponse extends ServiceMessageResponse {}
+
+export interface AuthWithTokenResponse extends ServiceDataResponse<{
+  accessToken: string;
+}> {}

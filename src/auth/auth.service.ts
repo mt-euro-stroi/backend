@@ -6,20 +6,20 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { AuthUser } from 'src/common/types/auth-user.type';
+import * as bcrypt from 'bcrypt';
+import { generateVerificationCode } from 'src/common/utils/verification-code.util';
+import { MailService } from 'src/mail/mail.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
 import {
   AuthWithTokenResponse,
   BaseAuthResponse,
 } from './types/auth-response.types';
-import { PrismaService } from '../prisma/prisma.service';
-import { MailService } from 'src/mail/mail.service';
-
+import type { AuthUser } from 'src/common/types/auth-user.type';
 
 @Injectable()
 export class AuthService {
@@ -31,18 +31,17 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  generateVerificationCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
   sendVerificationCode(email: string, verificationCode: string): void {
-    this.mailService.sendVerificationCode(email, verificationCode)
-      .catch(error => this.logger.error('Failed to send verification email', error.stack));
+    this.mailService
+      .sendVerificationCode(email, verificationCode)
+      .catch((error) =>
+        this.logger.error('Failed to send verification email', error.stack),
+      );
   }
 
   async signUp(signUpDto: SignUpDto): Promise<BaseAuthResponse> {
     this.logger.log('Sign up attempt');
-  
+
     const byPhone = await this.prismaService.user.findUnique({
       where: {
         phone: signUpDto.phone,
@@ -66,7 +65,7 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
-    const verificationCode = this.generateVerificationCode();
+    const verificationCode = generateVerificationCode();
 
     const user = await this.prismaService.user.create({
       data: {
@@ -78,9 +77,12 @@ export class AuthService {
 
     this.sendVerificationCode(signUpDto.email, verificationCode);
 
-    this.logger.log(`User created: id=${ user.id }`);
+    this.logger.log(`User created: id=${user.id}`);
 
-    return{ message: 'Registration successful. A verification code has been sent to your email.' };
+    return {
+      message:
+        'Registration successful. A verification code has been sent to your email.',
+    };
   }
 
   async signIn(signInDto: SignInDto): Promise<AuthWithTokenResponse> {
@@ -109,13 +111,15 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
-      isEmailVerified: user.isEmailVerified
+      isEmailVerified: user.isEmailVerified,
     });
 
     if (!user.isEmailVerified) {
-      this.logger.warn(`Sign in completed with unverified email (userId=${ user.id })`);
+      this.logger.warn(
+        `Sign in completed with unverified email (userId=${user.id})`,
+      );
 
-      const verificationCode = this.generateVerificationCode();
+      const verificationCode = generateVerificationCode();
 
       await this.prismaService.user.update({
         where: { id: user.id },
@@ -125,31 +129,40 @@ export class AuthService {
       });
 
       this.sendVerificationCode(user.email, verificationCode);
-      
-      return { message: 'Email is not verified. A new verification code has been sent to your email.', data: { accessToken } };
+
+      return {
+        message:
+          'Email is not verified. A new verification code has been sent to your email.',
+        data: { accessToken },
+      };
     }
 
-    this.logger.log(`Sign in success: userId=${ user.id }`);
+    this.logger.log(`Sign in success: userId=${user.id}`);
 
     return { message: 'User signed in successfully', data: { accessToken } };
   }
 
-  async verifyEmail(verifyEmailDto: VerifyEmailDto, authUser: AuthUser): Promise<AuthWithTokenResponse> {
+  async verifyEmail(
+    verifyEmailDto: VerifyEmailDto,
+    authUser: AuthUser,
+  ): Promise<AuthWithTokenResponse> {
     const userId = authUser.sub;
 
-    this.logger.log(`Email verification attempt started: userId=${ userId }`);
+    this.logger.log(`Email verification attempt started: userId=${userId}`);
 
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
 
     if (!user) {
-      this.logger.warn(`Email verification failed: user not found (userId=${ userId })`);
+      this.logger.warn(
+        `Email verification failed: user not found (userId=${userId})`,
+      );
       throw new NotFoundException('User not found');
     }
 
     if (user.isEmailVerified) {
-      this.logger.warn(`Email already verified (userId=${ userId })`);
+      this.logger.warn(`Email already verified (userId=${userId})`);
 
       const accessToken = await this.jwtService.signAsync({
         sub: user.id,
@@ -160,17 +173,21 @@ export class AuthService {
 
       return {
         message: 'Email is already verified',
-        data: { accessToken }
+        data: { accessToken },
       };
     }
 
     if (!user.verificationCode) {
-      this.logger.warn(`Email verification failed: no verification code (userId=${ userId })`);
+      this.logger.warn(
+        `Email verification failed: no verification code (userId=${userId})`,
+      );
       throw new BadRequestException('Verification code is missing');
     }
 
     if (user.verificationCode !== verifyEmailDto.verificationCode) {
-      this.logger.warn(`Email verification failed: invalid code (userId=${ userId })`);
+      this.logger.warn(
+        `Email verification failed: invalid code (userId=${userId})`,
+      );
       throw new BadRequestException('Invalid verification code');
     }
 
@@ -186,28 +203,74 @@ export class AuthService {
       sub: updatedUser.id,
       email: updatedUser.email,
       role: updatedUser.role,
-      isEmailVerified: true,
+      isEmailVerified: updatedUser.isEmailVerified,
     });
 
-    this.logger.log(`Email verified successfully (userId=${ userId })`);
+    this.logger.log(`Email verified successfully (userId=${userId})`);
 
     return {
       message: 'Email verified successfully',
-      data: { accessToken }
+      data: { accessToken },
     };
   }
 
-  async changePassword(changePasswordDto: ChangePasswordDto, authUser: AuthUser): Promise<BaseAuthResponse> {
+  async resendVerificationCode(authUser: AuthUser): Promise<BaseAuthResponse> {
     const userId = authUser.sub;
 
-    this.logger.log(`Password change attempt started (userId=${ userId })`);
+    this.logger.log(
+      `Resend verification code attempt started (userId=${userId})`,
+    );
 
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
 
     if (!user) {
-      this.logger.warn(`Password change failed: user not found (userId=${ userId })`);
+      this.logger.warn(
+        `Resend verification code failed: user not found (userId=${userId})`,
+      );
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      this.logger.warn(
+        `Resend verification skipped: email already verified (userId=${userId})`,
+      );
+      return { message: 'Email is already verified' };
+    }
+
+    const verificationCode = generateVerificationCode();
+
+    await this.prismaService.user.update({
+      where: { id: userId },
+      data: {
+        verificationCode,
+      },
+    });
+
+    this.sendVerificationCode(user.email, verificationCode);
+
+    this.logger.log(`Verification code resent successfully (userId=${userId})`);
+
+    return { message: 'Verification code has been resent to your email' };
+  }
+
+  async changePassword(
+    changePasswordDto: ChangePasswordDto,
+    authUser: AuthUser,
+  ): Promise<BaseAuthResponse> {
+    const userId = authUser.sub;
+
+    this.logger.log(`Password change attempt started (userId=${userId})`);
+
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `Password change failed: user not found (userId=${userId})`,
+      );
       throw new NotFoundException('User not found');
     }
 
@@ -217,7 +280,9 @@ export class AuthService {
     );
 
     if (!isValid) {
-      this.logger.warn(`Password change failed: invalid current password (userId=${ userId })`);
+      this.logger.warn(
+        `Password change failed: invalid current password (userId=${userId})`,
+      );
       throw new BadRequestException('Current password is incorrect');
     }
 
@@ -230,7 +295,7 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`Password changed successfully (userId=${ userId })`);
+    this.logger.log(`Password changed successfully (userId=${userId})`);
 
     return { message: 'Password changed successfully' };
   }

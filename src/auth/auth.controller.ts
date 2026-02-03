@@ -1,12 +1,13 @@
-import { Body, Controller, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
+import { CurrentUser } from 'src/common/decorators/auth-user.decorator';
 import { AuthGuard } from 'src/common/guards/auth.guard';
-import { AuthService } from './auth.service';
+import { EmailVerifiedGuard } from 'src/common/guards/email-verified.guard';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { EmailVerifiedGuard } from 'src/common/guards/email-verified.guard';
-
+import { AuthService } from './auth.service';
+import type { AuthUser } from 'src/common/types/auth-user.type';
 
 @Controller('auth')
 export class AuthController {
@@ -25,18 +26,24 @@ export class AuthController {
   @Post('verify-email')
   @UseGuards(AuthGuard)
   async verifyEmail(
-    @Req() req: Request & { user?: any },
-    @Body() verifyEmailDto: VerifyEmailDto
+    @CurrentUser() user: AuthUser,
+    @Body() verifyEmailDto: VerifyEmailDto,
   ) {
-    return await this.authService.verifyEmail(verifyEmailDto, req.user);
+    return await this.authService.verifyEmail(verifyEmailDto, user);
+  }
+
+  @Post('resend-verification-code')
+  @UseGuards(AuthGuard)
+  async resendVerificationCode(@CurrentUser() user: AuthUser) {
+    return await this.authService.resendVerificationCode(user);
   }
 
   @Patch('change-password')
   @UseGuards(AuthGuard, EmailVerifiedGuard)
   async changePassword(
-    @Req() req: Request & { user?: any },
-    @Body() changePasswordDto: ChangePasswordDto
+    @CurrentUser() user: AuthUser,
+    @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    return await this.authService.changePassword(changePasswordDto, req.user);
+    return await this.authService.changePassword(changePasswordDto, user);
   }
 }

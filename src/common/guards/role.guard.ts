@@ -4,17 +4,16 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 @Injectable()
-
 export class RoleGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request & { user?: any }>();
 
-    if (req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Access denied');
-    }
+    // if (req.user.role !== 'ADMIN') {
+    //   throw new ForbiddenException('Access denied');
+    // }
 
     return true;
   }

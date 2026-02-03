@@ -7,17 +7,16 @@ import {
   ParseIntPipe,
   Patch,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from 'src/common/decorators/auth-user.decorator';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { EmailVerifiedGuard } from 'src/common/guards/email-verified.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
-import { Request } from 'express';
-import { UsersService } from './users.service';
 import { FindAllUsersDto } from './dto/find-all-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
+import { UsersService } from './users.service';
+import type { AuthUser } from 'src/common/types/auth-user.type';
 
 @Controller('users')
 export class UsersController {
@@ -29,31 +28,30 @@ export class UsersController {
     return await this.usersService.findAll(query);
   }
 
-  @Get(':id')
+  @Get('me')
   @UseGuards(AuthGuard, EmailVerifiedGuard)
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request & { user?: any },
-  ) {
-    return await this.usersService.findOne(id, req.user);
+  async findMe(@CurrentUser() user: AuthUser) {
+    return await this.usersService.findMe(user);
   }
 
-  @Patch(':id')
+  @Get(':id')
+  @UseGuards(AuthGuard, EmailVerifiedGuard, RoleGuard)
+  async findOneById(@Param('id', ParseIntPipe) id: number) {
+    return await this.usersService.findOneById(id);
+  }
+
+  @Patch('me')
   @UseGuards(AuthGuard, EmailVerifiedGuard)
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request & { user?: any },
+  async updateMe(
+    @CurrentUser() user: AuthUser,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return await this.usersService.update(id, req.user, updateUserDto);
+    return await this.usersService.updateMe(user, updateUserDto);
   }
 
-  @Delete(':id')
+  @Delete('me')
   @UseGuards(AuthGuard, EmailVerifiedGuard)
-  async remove(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request & { user?: any },
-  ) {
-    return await this.usersService.remove(id, req.user);
+  async removeMe(@CurrentUser() user: AuthUser) {
+    return await this.usersService.removeMe(user);
   }
 }

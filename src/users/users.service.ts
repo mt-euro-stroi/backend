@@ -1,19 +1,14 @@
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
-import { AuthUser } from 'src/common/types/auth-user.type';
-import { FindAllUsersDto } from './dto/find-all-users.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import {
   PaginatedResult,
   ServiceDataResponse,
   ServiceMessageResponse,
-  UserResponse
-} from './types/users-response.types';
-import { PrismaService } from '../prisma/prisma.service';
+} from 'src/common/types/service-response.types';
+import { FindAllUsersDto } from './dto/find-all-users.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponse } from './types/users-response.types';
+import type { AuthUser } from 'src/common/types/auth-user.type';
 
 @Injectable()
 export class UsersService {
@@ -21,7 +16,9 @@ export class UsersService {
 
   constructor(private prismaService: PrismaService) {}
 
-  async findAll(query: FindAllUsersDto): Promise<ServiceDataResponse<PaginatedResult<UserResponse>>> {
+  async findAll(
+    query: FindAllUsersDto,
+  ): Promise<ServiceDataResponse<PaginatedResult<UserResponse>>> {
     this.logger.log('Users list request started');
 
     const page = query.page ?? 1;
@@ -42,7 +39,7 @@ export class UsersService {
         : {}),
     };
 
-    const [ users, total ] = await this.prismaService.$transaction([
+    const [users, total] = await this.prismaService.$transaction([
       this.prismaService.user.findMany({
         where,
         skip,
@@ -65,7 +62,9 @@ export class UsersService {
       this.prismaService.user.count({ where }),
     ]);
 
-    this.logger.log(`Users list retrieved successfully: items=${ users.length }, total=${ total }`,);
+    this.logger.log(
+      `Users list retrieved successfully: items=${users.length}, total=${total}`,
+    );
 
     return {
       message: 'Users retrieved successfully',
@@ -79,16 +78,45 @@ export class UsersService {
     };
   }
 
-
-  async findOne(id: number, authUser: AuthUser): Promise<ServiceDataResponse<UserResponse>> {
+  async findMe(authUser: AuthUser): Promise<ServiceDataResponse<UserResponse>> {
     const userId = authUser.sub;
 
-    this.logger.log(`User details request started: userId=${ id }`);
+    this.logger.log(`User profile request started: userId=${userId}`);
 
-    if (id !== userId) {
-      this.logger.warn(`User details access denied: requestedId=${ id }, authUserId=${ userId }`);
-      throw new ForbiddenException('Access denied');
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        role: true,
+        isActive: true,
+        isPhoneVerified: true,
+        isEmailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `User profile request failed: user not found (userId=${userId})`,
+      );
+      throw new NotFoundException('User not found');
     }
+
+    this.logger.log(`User profile retrieved successfully: userId=${userId}`);
+
+    return {
+      message: 'User retrieved successfully',
+      data: user,
+    };
+  }
+
+  async findOneById(id: number): Promise<ServiceDataResponse<UserResponse>> {
+    this.logger.log(`Admin user lookup started: targetUserId=${id}`);
 
     const user = await this.prismaService.user.findUnique({
       where: { id },
@@ -108,11 +136,13 @@ export class UsersService {
     });
 
     if (!user) {
-      this.logger.warn(`User not found: userId=${ id }`);
+      this.logger.warn(
+        `Admin user lookup failed: user not found (userId=${id})`,
+      );
       throw new NotFoundException('User not found');
     }
 
-    this.logger.log(`User details retrieved successfully: userId=${ id }`);
+    this.logger.log(`Admin user retrieved successfully: targetUserId=${id}`);
 
     return {
       message: 'User retrieved successfully',
@@ -120,32 +150,29 @@ export class UsersService {
     };
   }
 
-
-  async update(id: number, authUser: AuthUser, updateUserDto: UpdateUserDto): Promise<ServiceDataResponse<UserResponse>> {
+  async updateMe(
+    authUser: AuthUser,
+    updateUserDto: UpdateUserDto,
+  ): Promise<ServiceDataResponse<UserResponse>> {
     const userId = authUser.sub;
 
-    this.logger.log(`User update request started: userId=${ id }`);
-
-    if (id !== userId) {
-      this.logger.warn(`User update access denied: requestedId=${ id }, authUserId=${ userId }`);
-      throw new ForbiddenException('Access denied');
-    }
+    this.logger.log(`User update request started: userId=${userId}`);
 
     const user = await this.prismaService.user.findUnique({
-      where: { id },
+      where: { id: userId },
     });
 
     if (!user) {
-      this.logger.warn(`User update failed: user not found (userId=${ id })`);
+      this.logger.warn(`User update failed: user not found (userId=${userId})`);
       throw new NotFoundException('User not found');
     }
 
     const updatedUser = await this.prismaService.user.update({
-      where: { id },
+      where: { id: userId },
       data: { ...updateUserDto },
     });
 
-    this.logger.log(`User updated successfully: userId=${ id }`);
+    this.logger.log(`User updated successfully: userId=${userId}`);
 
     const { password, verificationCode, ...safeUser } = updatedUser;
 
@@ -155,33 +182,26 @@ export class UsersService {
     };
   }
 
-
-  async remove(id: number, authUser: AuthUser): Promise<ServiceMessageResponse> {
+  async removeMe(authUser: AuthUser): Promise<ServiceMessageResponse> {
     const userId = authUser.sub;
 
-    this.logger.log(`User delete request started: userId=${ id }`);
-
-    if (id !== userId) {
-      this.logger.warn(`User delete access denied: requestedId=${ id }, authUserId=${ userId }`);
-      throw new ForbiddenException('Access denied');
-    }
+    this.logger.log(`User delete request started: userId=${userId}`);
 
     const user = await this.prismaService.user.findUnique({
-      where: { id },
+      where: { id: userId },
     });
 
     if (!user) {
-      this.logger.warn(`User delete failed: user not found (userId=${ id })`);
+      this.logger.warn(`User delete failed: user not found (userId=${userId})`);
       throw new NotFoundException('User not found');
     }
 
     await this.prismaService.user.delete({
-      where: { id },
+      where: { id: userId },
     });
 
-    this.logger.log(`User deleted successfully: userId=${ id }`);
+    this.logger.warn(`User deleted: userId=${userId}`);
 
     return { message: 'User deleted successfully' };
   }
-
 }

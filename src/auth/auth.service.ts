@@ -3,7 +3,6 @@ import {
   ConflictException,
   Injectable,
   Logger,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -15,20 +14,19 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import {
-  AuthWithTokenResponse,
-  BaseAuthResponse,
-} from './types/auth-response.types';
+import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
+import { ServiceMessageResponse } from 'src/common/types/service-response.types';
+import { AuthWithTokenResponse } from './types/auth-response.types';
 import type { AuthUser } from 'src/common/types/auth-user.type';
 
 @Injectable()
 export class AuthService {
-  private logger = new Logger(AuthService.name);
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private prismaService: PrismaService,
-    private mailService: MailService,
-    private jwtService: JwtService,
+    private readonly prismaService: PrismaService,
+    private readonly mailService: MailService,
+    private readonly jwtService: JwtService,
   ) {}
 
   sendVerificationCode(email: string, verificationCode: string): void {
@@ -39,29 +37,25 @@ export class AuthService {
       );
   }
 
-  async signUp(signUpDto: SignUpDto): Promise<BaseAuthResponse> {
-    this.logger.log('Sign up attempt');
+  async signUp(signUpDto: SignUpDto): Promise<ServiceMessageResponse> {
+    this.logger.log('Sign up attempt started.');
 
     const byPhone = await this.prismaService.user.findUnique({
-      where: {
-        phone: signUpDto.phone,
-      },
+      where: { phone: signUpDto.phone },
     });
 
     if (byPhone) {
-      this.logger.warn('Sign up conflict: phone already exists');
-      throw new ConflictException('User with this phone already exists');
+      this.logger.warn('Sign up conflict: phone already exists.');
+      throw new ConflictException('User with this phone already exists.');
     }
 
     const byEmail = await this.prismaService.user.findUnique({
-      where: {
-        email: signUpDto.email,
-      },
+      where: { email: signUpDto.email },
     });
 
     if (byEmail) {
-      this.logger.warn('Sign up conflict: email already exists');
-      throw new ConflictException('User with this email already exists');
+      this.logger.warn('Sign up conflict: email already exists.');
+      throw new ConflictException('User with this email already exists.');
     }
 
     const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
@@ -77,7 +71,7 @@ export class AuthService {
 
     this.sendVerificationCode(signUpDto.email, verificationCode);
 
-    this.logger.log(`User created: id=${user.id}`);
+    this.logger.log(`User created successfully (userId=${user.id}).`);
 
     return {
       message:
@@ -85,16 +79,25 @@ export class AuthService {
     };
   }
 
-  async signIn(signInDto: SignInDto): Promise<AuthWithTokenResponse> {
-    this.logger.log('Sign in attempt');
+  async signIn(
+    signInDto: SignInDto,
+  ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
+    this.logger.log('Sign in attempt for email.');
 
     const user = await this.prismaService.user.findUnique({
       where: { email: signInDto.email },
     });
 
     if (!user) {
-      this.logger.warn('Sign in failed: user not found');
-      throw new UnauthorizedException('Invalid email or password');
+      this.logger.warn('Sign in failed: email not found.');
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(
+        `Sign in blocked: inactive account (userId=${user.id}).`,
+      );
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -103,29 +106,18 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      this.logger.warn('Sign in failed: invalid password');
-      throw new UnauthorizedException('Invalid email or password');
+      this.logger.warn(`Sign in failed: invalid password (userId=${user.id}).`);
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
-    const accessToken = await this.jwtService.signAsync({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      isEmailVerified: user.isEmailVerified,
-    });
-
     if (!user.isEmailVerified) {
-      this.logger.warn(
-        `Sign in completed with unverified email (userId=${user.id})`,
-      );
+      this.logger.log(`Unverified email login (userId=${user.id}).`);
 
       const verificationCode = generateVerificationCode();
 
       await this.prismaService.user.update({
         where: { id: user.id },
-        data: {
-          verificationCode,
-        },
+        data: { verificationCode },
       });
 
       this.sendVerificationCode(user.email, verificationCode);
@@ -133,66 +125,55 @@ export class AuthService {
       return {
         message:
           'Email is not verified. A new verification code has been sent to your email.',
-        data: { accessToken },
       };
     }
 
-    this.logger.log(`Sign in success: userId=${user.id}`);
+    const accessToken = await this.jwtService.signAsync({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
-    return { message: 'User signed in successfully', data: { accessToken } };
+    this.logger.log(`Sign in successful (userId=${user.id}).`);
+
+    return { message: 'User signed in successfully.', data: { accessToken } };
   }
 
   async verifyEmail(
     verifyEmailDto: VerifyEmailDto,
-    authUser: AuthUser,
-  ): Promise<AuthWithTokenResponse> {
-    const userId = authUser.sub;
-
-    this.logger.log(`Email verification attempt started: userId=${userId}`);
+  ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
+    this.logger.log('Email verification attempt started.');
 
     const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
+      where: { email: verifyEmailDto.email },
     });
 
     if (!user) {
-      this.logger.warn(
-        `Email verification failed: user not found (userId=${userId})`,
-      );
-      throw new NotFoundException('User not found');
+      this.logger.warn('Verification failed: email not found.');
+      throw new BadRequestException('Invalid verification code.');
     }
 
     if (user.isEmailVerified) {
-      this.logger.warn(`Email already verified (userId=${userId})`);
-
-      const accessToken = await this.jwtService.signAsync({
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-        isEmailVerified: true,
-      });
-
-      return {
-        message: 'Email is already verified',
-        data: { accessToken },
-      };
+      this.logger.log(`Email already verified (userId=${user.id}).`);
+      return { message: 'Email is already verified.' };
     }
 
     if (!user.verificationCode) {
       this.logger.warn(
-        `Email verification failed: no verification code (userId=${userId})`,
+        `Verification failed: code expired (userId=${user.id}).`,
       );
-      throw new BadRequestException('Verification code is missing');
+      throw new BadRequestException('Invalid verification code.');
     }
 
     if (user.verificationCode !== verifyEmailDto.verificationCode) {
       this.logger.warn(
-        `Email verification failed: invalid code (userId=${userId})`,
+        `Verification failed: code mismatch (userId=${user.id}).`,
       );
-      throw new BadRequestException('Invalid verification code');
+      throw new BadRequestException('Invalid verification code.');
     }
 
     const updatedUser = await this.prismaService.user.update({
-      where: { id: userId },
+      where: { id: user.id },
       data: {
         isEmailVerified: true,
         verificationCode: null,
@@ -203,65 +184,65 @@ export class AuthService {
       sub: updatedUser.id,
       email: updatedUser.email,
       role: updatedUser.role,
-      isEmailVerified: updatedUser.isEmailVerified,
     });
 
-    this.logger.log(`Email verified successfully (userId=${userId})`);
+    this.logger.log(`Email verified successfully (userId=${updatedUser.id}).`);
 
     return {
-      message: 'Email verified successfully',
+      message: 'Email verified successfully.',
       data: { accessToken },
     };
   }
 
-  async resendVerificationCode(authUser: AuthUser): Promise<BaseAuthResponse> {
-    const userId = authUser.sub;
-
-    this.logger.log(
-      `Resend verification code attempt started (userId=${userId})`,
-    );
+  async resendVerificationCode(
+    resendVerificationCodeDto: ResendVerificationCodeDto,
+  ): Promise<ServiceMessageResponse> {
+    this.logger.log('Resend verification code attempt started.');
 
     const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
+      where: { email: resendVerificationCodeDto.email },
     });
 
     if (!user) {
-      this.logger.warn(
-        `Resend verification code failed: user not found (userId=${userId})`,
-      );
-      throw new NotFoundException('User not found');
+      this.logger.warn('Resend failed: email not found.');
+      return {
+        message:
+          'If the email exists and requires verification, a new code has been sent.',
+      };
     }
 
     if (user.isEmailVerified) {
-      this.logger.warn(
-        `Resend verification skipped: email already verified (userId=${userId})`,
-      );
-      return { message: 'Email is already verified' };
+      this.logger.warn(`Resend skipped: already verified (userId=${user.id}).`);
+      return {
+        message:
+          'If the email exists and requires verification, a new code has been sent.',
+      };
     }
 
     const verificationCode = generateVerificationCode();
 
     await this.prismaService.user.update({
-      where: { id: userId },
-      data: {
-        verificationCode,
-      },
+      where: { id: user.id },
+      data: { verificationCode },
     });
 
     this.sendVerificationCode(user.email, verificationCode);
 
-    this.logger.log(`Verification code resent successfully (userId=${userId})`);
+    this.logger.log(`Verification code resent (userId=${user.id}).`);
 
-    return { message: 'Verification code has been resent to your email' };
+    return {
+      message:
+        'If the email exists and requires verification, a new code has been sent.',
+    };
   }
 
   async changePassword(
     changePasswordDto: ChangePasswordDto,
     authUser: AuthUser,
-  ): Promise<BaseAuthResponse> {
+  ): Promise<ServiceMessageResponse> {
     const userId = authUser.sub;
 
-    this.logger.log(`Password change attempt started (userId=${userId})`);
+    this.logger.log(`Password change attempt started (userId=${userId}).`);
 
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
@@ -269,9 +250,9 @@ export class AuthService {
 
     if (!user) {
       this.logger.warn(
-        `Password change failed: user not found (userId=${userId})`,
+        `Password change failed: authenticated user missing (userId=${userId}).`,
       );
-      throw new NotFoundException('User not found');
+      throw new UnauthorizedException('Please sign in again to continue.');
     }
 
     const isValid = await bcrypt.compare(
@@ -281,22 +262,20 @@ export class AuthService {
 
     if (!isValid) {
       this.logger.warn(
-        `Password change failed: invalid current password (userId=${userId})`,
+        `Password change failed: current password incorrect (userId=${userId}).`,
       );
-      throw new BadRequestException('Current password is incorrect');
+      throw new BadRequestException('Current password is incorrect.');
     }
 
     const newHash = await bcrypt.hash(changePasswordDto.newPassword, 10);
 
     await this.prismaService.user.update({
       where: { id: userId },
-      data: {
-        password: newHash,
-      },
+      data: { password: newHash },
     });
 
-    this.logger.log(`Password changed successfully (userId=${userId})`);
+    this.logger.log(`Password changed successfully (userId=${userId}).`);
 
-    return { message: 'Password changed successfully' };
+    return { message: 'Password changed successfully.' };
   }
 }

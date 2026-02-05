@@ -35,3 +35,28 @@ model User {
 
   @@map("users")
 }
+
+model ResidentialComplex {
+  id             Int      @id @default(autoincrement())
+
+  name           String   @db.VarChar(255)
+  slug           String   @unique @db.VarChar(255)
+
+  description    String?  @db.Text
+
+  city           String   @db.VarChar(100)
+  address        String   @db.VarChar(255)
+
+  latitude       Decimal? @db.Decimal(9,6)
+  longitude      Decimal? @db.Decimal(9,6)
+
+  developerName  String?  @db.VarChar(255) @map("developer_name")
+  completionDate DateTime? @map("completion_date")
+
+  isPublished    Boolean  @default(false) @map("is_published")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("residential_complexes")
+}

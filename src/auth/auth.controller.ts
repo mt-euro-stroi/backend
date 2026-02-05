@@ -1,11 +1,11 @@
 import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/auth-user.decorator';
 import { AuthGuard } from 'src/common/guards/auth.guard';
-import { EmailVerifiedGuard } from 'src/common/guards/email-verified.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
 import { AuthService } from './auth.service';
 import type { AuthUser } from 'src/common/types/auth-user.type';
 
@@ -24,22 +24,21 @@ export class AuthController {
   }
 
   @Post('verify-email')
-  @UseGuards(AuthGuard)
-  async verifyEmail(
-    @CurrentUser() user: AuthUser,
-    @Body() verifyEmailDto: VerifyEmailDto,
-  ) {
-    return await this.authService.verifyEmail(verifyEmailDto, user);
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return await this.authService.verifyEmail(verifyEmailDto);
   }
 
   @Post('resend-verification-code')
-  @UseGuards(AuthGuard)
-  async resendVerificationCode(@CurrentUser() user: AuthUser) {
-    return await this.authService.resendVerificationCode(user);
+  async resendVerificationCode(
+    @Body() resendVerificationCodeDto: ResendVerificationCodeDto,
+  ) {
+    return await this.authService.resendVerificationCode(
+      resendVerificationCodeDto,
+    );
   }
 
   @Patch('change-password')
-  @UseGuards(AuthGuard, EmailVerifiedGuard)
+  @UseGuards(AuthGuard)
   async changePassword(
     @CurrentUser() user: AuthUser,
     @Body() changePasswordDto: ChangePasswordDto,

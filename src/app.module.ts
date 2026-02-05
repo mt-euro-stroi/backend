@@ -8,6 +8,7 @@ import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { MailService } from './mail/mail.service';
+import { ResidentialComplexModule } from './residential-complex/residential-complex.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MailService } from './mail/mail.service';
       serveRoot: '/uploads',
     }),
     MailModule,
+    ResidentialComplexModule,
   ],
   controllers: [AppController],
   providers: [AppService, MailService],

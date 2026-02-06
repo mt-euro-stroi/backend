@@ -1,7 +1,7 @@
 import {
   IsEmail,
   IsOptional,
-  IsPassportNumber,
+  IsPhoneNumber,
   IsString,
   Matches,
   MaxLength,
@@ -13,23 +13,23 @@ export class UpdateUserDto {
   @IsString()
   @Transform(({ value }) => value?.trim())
   @MaxLength(50)
-  firstName: string;
+  firstName?: string;
 
   @IsOptional()
   @IsString()
   @Transform(({ value }) => value?.trim())
   @MaxLength(50)
-  lastName: string;
+  lastName?: string;
 
   @IsOptional()
-  @IsPassportNumber('RU')
+  @IsPhoneNumber('RU')
   @Transform(({ value }) => value?.trim())
   @Matches(/^\+\d{11}$/, { message: 'Phone must be in format +7**********' })
-  phone: string;
+  phone?: string;
 
   @IsOptional()
   @IsEmail()
   @Transform(({ value }) => value?.trim())
   @MaxLength(255)
-  email: string;
+  email?: string;
 }

@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
-export class FindAllUsersDto {
+export class FindAllResidentialComplexDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()

@@ -7,7 +7,7 @@ import {
 } from 'src/common/types/service-response.types';
 import { FindAllUsersDto } from './dto/find-all-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponse } from './types/users-response.types';
+import { UserListItem, UserResponse } from './types/users-response.types';
 import type { AuthUser } from 'src/common/types/auth-user.type';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class UsersService {
 
   async findAll(
     query: FindAllUsersDto,
-  ): Promise<ServiceDataResponse<PaginatedResult<UserResponse>>> {
+  ): Promise<ServiceDataResponse<PaginatedResult<UserListItem>>> {
     this.logger.log('Users list request started.');
 
     const page = query.page ?? 1;
@@ -49,14 +49,9 @@ export class UsersService {
           id: true,
           firstName: true,
           lastName: true,
-          phone: true,
           email: true,
           role: true,
-          isActive: true,
-          isPhoneVerified: true,
-          isEmailVerified: true,
-          createdAt: true,
-          updatedAt: true,
+          isActive: true
         },
       }),
       this.prismaService.user.count({ where }),

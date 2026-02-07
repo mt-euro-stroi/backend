@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
-export class FindAllResidentialComplexDto {
+export class FindAllResidentialComplexesDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -30,5 +30,5 @@ export class FindAllResidentialComplexDto {
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
-  isActive?: boolean;
+  isPublished?: boolean;
 }

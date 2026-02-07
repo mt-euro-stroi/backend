@@ -40,8 +40,10 @@ export class AuthService {
   async signUp(signUpDto: SignUpDto): Promise<ServiceMessageResponse> {
     this.logger.log('Sign up attempt started.');
 
+    const { phone, email, password } = signUpDto;
+
     const byPhone = await this.prismaService.user.findUnique({
-      where: { phone: signUpDto.phone },
+      where: { phone },
     });
 
     if (byPhone) {
@@ -50,7 +52,7 @@ export class AuthService {
     }
 
     const byEmail = await this.prismaService.user.findUnique({
-      where: { email: signUpDto.email },
+      where: { email },
     });
 
     if (byEmail) {
@@ -58,7 +60,7 @@ export class AuthService {
       throw new ConflictException('User with this email already exists.');
     }
 
-    const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const verificationCode = generateVerificationCode();
 
     const user = await this.prismaService.user.create({
@@ -69,7 +71,7 @@ export class AuthService {
       },
     });
 
-    this.sendVerificationCode(signUpDto.email, verificationCode);
+    this.sendVerificationCode(email, verificationCode);
 
     this.logger.log(`User created successfully (userId=${user.id}).`);
 
@@ -84,8 +86,10 @@ export class AuthService {
   ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
     this.logger.log('Sign in attempt for email.');
 
+    const { email, password } = signInDto;
+
     const user = await this.prismaService.user.findUnique({
-      where: { email: signInDto.email },
+      where: { email },
     });
 
     if (!user) {
@@ -100,10 +104,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      signInDto.password,
-      user.password,
-    );
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       this.logger.warn(`Sign in failed: invalid password (userId=${user.id}).`);
@@ -144,8 +145,10 @@ export class AuthService {
   ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
     this.logger.log('Email verification attempt started.');
 
+    const { email, verificationCode } = verifyEmailDto;
+
     const user = await this.prismaService.user.findUnique({
-      where: { email: verifyEmailDto.email },
+      where: { email },
     });
 
     if (!user) {
@@ -165,7 +168,7 @@ export class AuthService {
       throw new BadRequestException('Invalid verification code.');
     }
 
-    if (user.verificationCode !== verifyEmailDto.verificationCode) {
+    if (user.verificationCode !== verificationCode) {
       this.logger.warn(
         `Verification failed: code mismatch (userId=${user.id}).`,
       );
@@ -199,8 +202,10 @@ export class AuthService {
   ): Promise<ServiceMessageResponse> {
     this.logger.log('Resend verification code attempt started.');
 
+    const { email } = resendVerificationCodeDto;
+
     const user = await this.prismaService.user.findUnique({
-      where: { email: resendVerificationCodeDto.email },
+      where: { email },
     });
 
     if (!user) {
@@ -244,6 +249,8 @@ export class AuthService {
 
     this.logger.log(`Password change attempt started (userId=${userId}).`);
 
+    const { currentPassword, newPassword } = changePasswordDto;
+
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
@@ -255,10 +262,7 @@ export class AuthService {
       throw new UnauthorizedException('Please sign in again to continue.');
     }
 
-    const isValid = await bcrypt.compare(
-      changePasswordDto.currentPassword,
-      user.password,
-    );
+    const isValid = await bcrypt.compare(currentPassword, user.password);
 
     if (!isValid) {
       this.logger.warn(
@@ -267,7 +271,7 @@ export class AuthService {
       throw new BadRequestException('Current password is incorrect.');
     }
 
-    const newHash = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    const newHash = await bcrypt.hash(newPassword, 10);
 
     await this.prismaService.user.update({
       where: { id: userId },

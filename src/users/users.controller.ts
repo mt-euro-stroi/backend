@@ -45,7 +45,7 @@ export class UsersController {
     @CurrentUser() user: AuthUser,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return await this.usersService.updateMe(user, updateUserDto);
+    return await this.usersService.updateMe(updateUserDto, user);
   }
 
   @Delete('me')

@@ -21,19 +21,21 @@ export class UsersService {
   ): Promise<ServiceDataResponse<PaginatedResult<UserListItem>>> {
     this.logger.log('Users list request started.');
 
+    const { search, isActive } = query;
+
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
     const where = {
-      ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
-      ...(query.search
+      ...(isActive !== undefined ? { isActive: isActive } : {}),
+      ...(search
         ? {
             OR: [
-              { firstName: { contains: query.search } },
-              { lastName: { contains: query.search } },
-              { email: { contains: query.search } },
-              { phone: { contains: query.search } },
+              { firstName: { contains: search } },
+              { lastName: { contains: search } },
+              { email: { contains: search } },
+              { phone: { contains: search } },
             ],
           }
         : {}),
@@ -51,7 +53,7 @@ export class UsersService {
           lastName: true,
           email: true,
           role: true,
-          isActive: true
+          isActive: true,
         },
       }),
       this.prismaService.user.count({ where }),
@@ -144,8 +146,8 @@ export class UsersService {
   }
 
   async updateMe(
-    authUser: AuthUser,
     updateUserDto: UpdateUserDto,
+    authUser: AuthUser,
   ): Promise<ServiceDataResponse<UserResponse>> {
     const userId = authUser.sub;
 

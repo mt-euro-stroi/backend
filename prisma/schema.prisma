@@ -47,8 +47,8 @@ model ResidentialComplex {
   city           String   @db.VarChar(100)
   address        String   @db.VarChar(255)
 
-  latitude       Decimal? @db.Decimal(9,6)
-  longitude      Decimal? @db.Decimal(9,6)
+  latitude       Float?
+  longitude      Float?
 
   developerName  String?  @db.VarChar(255) @map("developer_name")
   completionDate DateTime? @map("completion_date")

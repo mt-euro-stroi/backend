@@ -7,10 +7,15 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ResidentialComplexService } from './residential-complex.service';
 import { CreateResidentialComplexDto } from './dto/create-residential-complex.dto';
 import { UpdateResidentialComplexDto } from './dto/update-residential-complex.dto';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { RoleGuard } from 'src/common/guards/role.guard';
+import { FindAllUsersDto } from 'src/users/dto/find-all-users.dto';
 
 @Controller('residential-complex')
 export class ResidentialComplexController {
@@ -19,6 +24,7 @@ export class ResidentialComplexController {
   ) {}
 
   @Post()
+  @UseGuards(AuthGuard, RoleGuard)
   async create(
     @Body() createResidentialComplexDto: CreateResidentialComplexDto,
   ) {
@@ -28,27 +34,35 @@ export class ResidentialComplexController {
   }
 
   @Get()
-  async findAll() {
-    return await this.residentialComplexService.findAll();
+  async findAll(@Query() query: FindAllUsersDto) {
+    return await this.residentialComplexService.findAll(query);
+  }
+
+  @Get('by-id/:id')
+  @UseGuards(AuthGuard, RoleGuard)
+  async findOneById(@Param('id', ParseIntPipe) id: number) {
+    return await this.residentialComplexService.findOneById(id);
   }
 
   @Get(':slug')
-  async findOne(@Param('slug') slug: string) {
-    return await this.residentialComplexService.findOne(slug);
+  async findOneBySlug(@Param('slug') slug: string) {
+    return await this.residentialComplexService.findOneBySlug(slug);
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard, RoleGuard)
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('slug') slug: string,
     @Body() updateResidentialComplexDto: UpdateResidentialComplexDto,
   ) {
     return await this.residentialComplexService.update(
-      id,
+      slug,
       updateResidentialComplexDto,
     );
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard, RoleGuard)
   async remove(@Param('id', ParseIntPipe) id: number) {
     return await this.residentialComplexService.remove(id);
   }

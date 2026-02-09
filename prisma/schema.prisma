@@ -55,6 +55,9 @@ model ResidentialComplex {
 
   isPublished    Boolean  @default(false) @map("is_published")
 
+  files          Json
+  mainFile       String   @map("main_file")
+
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

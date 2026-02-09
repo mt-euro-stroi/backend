@@ -9,6 +9,8 @@ import {
   ParseIntPipe,
   UseGuards,
   Query,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ResidentialComplexService } from './residential-complex.service';
 import { CreateResidentialComplexDto } from './dto/create-residential-complex.dto';
@@ -16,6 +18,8 @@ import { UpdateResidentialComplexDto } from './dto/update-residential-complex.dt
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
 import { FindAllUsersDto } from 'src/users/dto/find-all-users.dto';
+import { FilesUploadInterceptor } from 'src/common/interceptors/files-upload.interceptor';
+import { RequiredFilesPipe } from 'src/common/pipe/required-files.pipe';
 
 @Controller('residential-complex')
 export class ResidentialComplexController {
@@ -25,11 +29,14 @@ export class ResidentialComplexController {
 
   @Post()
   @UseGuards(AuthGuard, RoleGuard)
+  @UseInterceptors(FilesUploadInterceptor('./uploads/residential-complexes'))
   async create(
     @Body() createResidentialComplexDto: CreateResidentialComplexDto,
+    @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
   ) {
     return await this.residentialComplexService.create(
       createResidentialComplexDto,
+      files.map((file) => file.filename),
     );
   }
 

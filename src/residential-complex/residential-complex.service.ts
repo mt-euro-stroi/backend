@@ -17,6 +17,7 @@ import {
   ResidentialComplexResponse,
 } from './types/residential-complex-response.types';
 import { FindAllResidentialComplexesDto } from './dto/find-all-residential-complex.dto';
+import { removeUploadedFiles } from 'src/common/utils/remove-uploaded-files.util';
 
 @Injectable()
 export class ResidentialComplexService {
@@ -26,39 +27,53 @@ export class ResidentialComplexService {
 
   async create(
     createResidentialComplexDto: CreateResidentialComplexDto,
+    files: string[],
   ): Promise<ServiceDataResponse<ResidentialComplexListItem>> {
-    const { slug } = createResidentialComplexDto;
+    try {
+      const { slug } = createResidentialComplexDto;
 
-    this.logger.log('Residential complex creation attempt started.');
+      this.logger.log('Residential complex creation attempt started.');
 
-    const bySlug = await this.prismaService.residentialComplex.findUnique({
-      where: { slug },
-    });
-
-    if (bySlug) {
-      this.logger.warn(
-        'Residential complex creation conflict: slug already exists.',
-      );
-      throw new ConflictException(
-        'Residential complex with this slug already exists',
-      );
-    }
-
-    const residentialComplex =
-      await this.prismaService.residentialComplex.create({
-        data: {
-          ...createResidentialComplexDto,
-        },
+      const bySlug = await this.prismaService.residentialComplex.findUnique({
+        where: { slug },
       });
 
-    this.logger.log(
-      `Residential complex created successfully (residentialComplexId=${residentialComplex.id}).`,
-    );
+      if (bySlug) {
+        this.logger.warn(
+          'Residential complex creation conflict: slug already exists.',
+        );
+        throw new ConflictException(
+          'Residential complex with this slug already exists',
+        );
+      }
 
-    return {
-      message: 'Residential complex created successfully',
-      data: residentialComplex,
-    };
+      const residentialComplex =
+        await this.prismaService.residentialComplex.create({
+          data: {
+            ...createResidentialComplexDto,
+            files,
+            mainFile: files[0],
+          },
+        });
+
+      this.logger.log(
+        `Residential complex created successfully (residentialComplexId=${residentialComplex.id}).`,
+      );
+
+      return {
+        message: 'Residential complex created successfully',
+        data: residentialComplex,
+      };
+    } catch (error) {
+      await removeUploadedFiles('./uploads/residential-complexes', files);
+
+      this.logger.error(
+        'Residential complex creation failed. Uploaded files were removed.',
+        error.stack,
+      );
+
+      throw error;
+    }
   }
 
   async findAll(

@@ -56,15 +56,18 @@ export class ResidentialComplexController {
     return await this.residentialComplexService.findOneBySlug(slug);
   }
 
-  @Patch(':id')
+  @Patch(':slug')
   @UseGuards(AuthGuard, RoleGuard)
+  @UseInterceptors(FilesUploadInterceptor('./uploads/residential-complexes'))
   async update(
     @Param('slug') slug: string,
     @Body() updateResidentialComplexDto: UpdateResidentialComplexDto,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     return await this.residentialComplexService.update(
       slug,
       updateResidentialComplexDto,
+      files?.map((file) => file.filename) ?? []
     );
   }
 

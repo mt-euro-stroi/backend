@@ -1,35 +1,43 @@
 import {
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsPhoneNumber,
   IsString,
   Matches,
   MaxLength,
+  MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class UpdateUserDto {
-  @IsOptional()
+  @Transform(({ value }) => value?.trim())
   @IsString()
-  @Transform(({ value }) => value?.trim())
+  @IsNotEmpty()
   @MaxLength(50)
-  firstName?: string;
+  firstName: string;
 
-  @IsOptional()
+  @Transform(({ value }) => value?.trim())
   @IsString()
-  @Transform(({ value }) => value?.trim())
+  @IsNotEmpty()
   @MaxLength(50)
-  lastName?: string;
+  lastName: string;
 
-  @IsOptional()
-  @IsPhoneNumber('RU')
   @Transform(({ value }) => value?.trim())
-  @Matches(/^\+\d{11}$/, { message: 'Phone must be in format +7**********' })
-  phone?: string;
+  @Matches(/^\+7\d{10}$/, { message: 'Phone must be in format +7XXXXXXXXXX' })
+  phone: string;
 
-  @IsOptional()
+  @Transform(({ value }) => value?.trim())
   @IsEmail()
-  @Transform(({ value }) => value?.trim())
+  @IsNotEmpty()
   @MaxLength(255)
-  email?: string;
+  email: string;
+
+  @Transform(({ value }) => value?.trim())
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  @MaxLength(255)
+  @Matches(/^\S+$/, { message: 'Password must not contain spaces' })
+  password: string;
 }

@@ -35,61 +35,48 @@ export class ResidentialComplexService {
       `Residential complex creation attempt started (slug=${slug}).`,
     );
 
-    try {
-      const bySlug = await this.prismaService.residentialComplex.findUnique({
-        where: { slug },
-      });
+    const bySlug = await this.prismaService.residentialComplex.findUnique({
+      where: { slug },
+    });
 
-      if (bySlug) {
-        this.logger.warn(
-          `Residential complex creation conflict: slug already exists (slug=${slug}).`,
-        );
-        throw new ConflictException(
-          'Residential complex with this slug already exists',
-        );
-      }
-
-      const residentialComplex = await this.prismaService.$transaction(
-        async (tx) => {
-          const complex = await tx.residentialComplex.create({
-            data: {
-              ...createResidentialComplexDto,
-            },
-          });
-
-          await tx.file.createMany({
-            data: files.map((file, index) => ({
-              path: `residential-complexes/${file}`,
-              entityId: complex.id,
-              entityType: 'RESIDENTIAL_COMPLEX',
-              isMain: index === 0,
-            })),
-          });
-
-          return complex;
-        },
+    if (bySlug) {
+      this.logger.warn(
+        `Residential complex creation conflict: slug already exists (slug=${slug}).`,
       );
-
-      this.logger.log(
-        `Residential complex created successfully (id=${residentialComplex.id}, slug=${slug}).`,
+      throw new ConflictException(
+        'Residential complex with this slug already exists',
       );
-
-      return {
-        message: 'Residential complex created successfully',
-        data: residentialComplex,
-      };
-    } catch (error) {
-      await removeUploadedFiles(
-        files.map((file) => `residential-complexes/${file}`),
-      );
-
-      this.logger.error(
-        'Residential complex creation failed. Uploaded files were removed.',
-        error.stack,
-      );
-
-      throw error;
     }
+
+    const residentialComplex = await this.prismaService.$transaction(
+      async (tx) => {
+        const complex = await tx.residentialComplex.create({
+          data: {
+            ...createResidentialComplexDto,
+          },
+        });
+
+        await tx.file.createMany({
+          data: files.map((item, index) => ({
+            path: `residential-complexes/${item}`,
+            entityId: complex.id,
+            entityType: 'RESIDENTIAL_COMPLEX',
+            isMain: index === 0,
+          })),
+        });
+
+        return complex;
+      },
+    );
+
+    this.logger.log(
+      `Residential complex created successfully (id=${residentialComplex.id}, slug=${slug}).`,
+    );
+
+    return {
+      message: 'Residential complex created successfully',
+      data: residentialComplex,
+    };
   }
 
   async findAll(
@@ -116,8 +103,8 @@ export class ResidentialComplexService {
         : {}),
     };
 
-    const [residentialComplexes, total] =
-      await this.prismaService.$transaction([
+    const [residentialComplexes, total] = await this.prismaService.$transaction(
+      [
         this.prismaService.residentialComplex.findMany({
           where,
           skip,
@@ -133,9 +120,27 @@ export class ResidentialComplexService {
           },
         }),
         this.prismaService.residentialComplex.count({ where }),
-      ]);
+      ],
+    );
 
-    const ids = residentialComplexes.map(rc => rc.id);
+    if (residentialComplexes.length === 0) {
+      this.logger.log(
+        `Residential complexes list retrieved: items=0, total=${total}, page=${page}.`,
+      );
+
+      return {
+        message: 'Residential complexes retrieved successfully.',
+        data: {
+          items: [],
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    }
+
+    const ids = residentialComplexes.map((item) => item.id);
 
     const mainFiles = await this.prismaService.file.findMany({
       where: {
@@ -150,12 +155,12 @@ export class ResidentialComplexService {
     });
 
     const mainFileMap = new Map(
-      mainFiles.map(file => [file.entityId, file.path]),
+      mainFiles.map((item) => [item.entityId, item.path]),
     );
 
-    const formattedResidentialComplexes = residentialComplexes.map(rc => ({
-      ...rc,
-      mainFile: mainFileMap.get(rc.id),
+    const formattedResidentialComplexes = residentialComplexes.map((item) => ({
+      ...item,
+      mainFile: mainFileMap.get(item.id) ?? null,
     }));
 
     this.logger.log(
@@ -174,64 +179,23 @@ export class ResidentialComplexService {
     };
   }
 
-  async findOneById(
-    id: number,
+  async findOne(
+    identifier: string,
   ): Promise<ServiceDataResponse<ResidentialComplexResponse>> {
-    this.logger.log('Residential complex get by id attempt started.');
-
-    const residentialComplex =
-      await this.prismaService.residentialComplex.findUnique({
-        where: { id },
-      });
-
-    if (!residentialComplex) {
-      this.logger.warn(
-        `Residential complex get by id failed: not found (id=${id}).`,
-      );
-      throw new NotFoundException('Residential complex not found');
-    }
-
-    const files = await this.prismaService.file.findMany({
-      where: {
-        entityId: id,
-        entityType: 'RESIDENTIAL_COMPLEX',
-      },
-      select: {
-        id: true,
-        path: true
-      },
-      orderBy: [
-        { isMain: 'desc' },
-        { createdAt: 'desc' }
-      ],
-    });
-
     this.logger.log(
-      `Residential complex retrieved successfully (id=${residentialComplex.id}).`,
+      `Residential complex get attempt started (identifier=${identifier}).`,
     );
 
-    return {
-      message: 'Residential complex retrieved successfully.',
-      data: {
-        ...residentialComplex,
-        files
-      },
-    };
-  }
-
-  async findOneBySlug(
-    slug: string,
-  ): Promise<ServiceDataResponse<ResidentialComplexResponse>> {
-    this.logger.log('Residential complex get by slug attempt started.');
+    const isId = !isNaN(Number(identifier));
 
     const residentialComplex =
       await this.prismaService.residentialComplex.findUnique({
-        where: { slug },
+        where: isId ? { id: Number(identifier) } : { slug: identifier },
       });
 
     if (!residentialComplex) {
       this.logger.warn(
-        `Residential complex get by slug failed: not found (slug=${slug}).`,
+        `Residential complex get failed: not found (identifier=${identifier}).`,
       );
       throw new NotFoundException('Residential complex not found');
     }
@@ -243,12 +207,9 @@ export class ResidentialComplexService {
       },
       select: {
         id: true,
-        path: true
+        path: true,
       },
-      orderBy: [
-        { isMain: 'desc' },
-        { createdAt: 'desc' }
-      ],
+      orderBy: [{ isMain: 'desc' }, { createdAt: 'desc' }],
     });
 
     this.logger.log(
@@ -259,129 +220,124 @@ export class ResidentialComplexService {
       message: 'Residential complex retrieved successfully.',
       data: {
         ...residentialComplex,
-        files
+        files,
       },
     };
   }
 
   async update(
     slug: string,
-    updateResidentialComplexDto: UpdateResidentialComplexDto,
+    updateDto: UpdateResidentialComplexDto,
     newFiles: string[],
-  ) {
+  ): Promise<ServiceDataResponse<ResidentialComplexResponse>> {
     this.logger.log(
       `Residential complex update attempt started (slug=${slug}).`,
     );
 
-    const residentialComplex =
-      await this.prismaService.residentialComplex.findUnique({
-        where: { slug },
-      });
+    const complex = await this.prismaService.residentialComplex.findUnique({
+      where: { slug },
+    });
 
-    if (!residentialComplex) {
+    if (!complex) {
       this.logger.warn(
         `Residential complex update failed: not found (slug=${slug}).`,
       );
       throw new NotFoundException('Residential complex not found');
     }
 
-    const { deletedFileIds, ...updateData } =
-      updateResidentialComplexDto;
+    const { deletedFileIds = [], ...updateData } = updateDto;
 
-    let filesToDelete: { path: string }[] = [];
+    const filesToDelete = deletedFileIds.length
+      ? await this.prismaService.file.findMany({
+          where: {
+            id: { in: deletedFileIds },
+            entityId: complex.id,
+            entityType: 'RESIDENTIAL_COMPLEX',
+          },
+          select: { id: true, path: true, isMain: true },
+        })
+      : [];
 
-    if (deletedFileIds?.length) {
-      filesToDelete = await this.prismaService.file.findMany({
-        where: {
-          id: { in: deletedFileIds },
-          entityId: residentialComplex.id,
-          entityType: 'RESIDENTIAL_COMPLEX',
-        },
-        select: { path: true },
+    const mainDeleted = filesToDelete.some((f) => f.isMain);
+
+    const updatedComplex = await this.prismaService.$transaction(async (tx) => {
+      const updated = await tx.residentialComplex.update({
+        where: { slug },
+        data: updateData,
       });
-    }
 
-    const updatedResidentialComplex =
-      await this.prismaService.$transaction(async (tx) => {
-        const complex = await tx.residentialComplex.update({
-          where: { slug },
-          data: updateData,
+      if (deletedFileIds.length) {
+        await tx.file.deleteMany({
+          where: {
+            id: { in: deletedFileIds },
+            entityId: updated.id,
+            entityType: 'RESIDENTIAL_COMPLEX',
+          },
+        });
+      }
+
+      if (newFiles?.length) {
+        await tx.file.createMany({
+          data: newFiles.map((file) => ({
+            path: `residential-complexes/${file}`,
+            entityId: updated.id,
+            entityType: 'RESIDENTIAL_COMPLEX',
+            isMain: false,
+          })),
+        });
+      }
+
+      if (mainDeleted) {
+        const newMain = await tx.file.findFirst({
+          where: {
+            entityId: updated.id,
+            entityType: 'RESIDENTIAL_COMPLEX',
+          },
+          orderBy: { createdAt: 'asc' },
         });
 
-        let mainWasDeleted = false;
-
-        if (deletedFileIds?.length) {
-          const mainFile = await tx.file.findFirst({
-            where: {
-              entityId: complex.id,
-              entityType: 'RESIDENTIAL_COMPLEX',
-              isMain: true,
-            },
-          });
-
-          if (mainFile && deletedFileIds.includes(mainFile.id)) {
-            mainWasDeleted = true;
-          }
-
-          await tx.file.deleteMany({
-            where: {
-              id: { in: deletedFileIds },
-              entityId: complex.id,
-              entityType: 'RESIDENTIAL_COMPLEX',
-            },
+        if (newMain) {
+          await tx.file.update({
+            where: { id: newMain.id },
+            data: { isMain: true },
           });
         }
+      }
 
-        if (newFiles?.length) {
-          await tx.file.createMany({
-            data: newFiles.map((file) => ({
-              path: `residential-complexes/${file}`,
-              entityId: complex.id,
-              entityType: 'RESIDENTIAL_COMPLEX',
-              isMain: false,
-            })),
-          });
-        }
-
-        if (mainWasDeleted) {
-          const newMain = await tx.file.findFirst({
-            where: {
-              entityId: complex.id,
-              entityType: 'RESIDENTIAL_COMPLEX',
-            },
-            orderBy: { createdAt: 'asc' },
-          });
-
-          if (newMain) {
-            await tx.file.update({
-              where: { id: newMain.id },
-              data: { isMain: true },
-            });
-          }
-        }
-
-        return complex;
-      });
-
+      return updated;
+    });
 
     if (filesToDelete.length) {
       await removeUploadedFiles(filesToDelete.map((f) => f.path));
     }
 
+    const files = await this.prismaService.file.findMany({
+      where: {
+        entityId: updatedComplex.id,
+        entityType: 'RESIDENTIAL_COMPLEX',
+      },
+      select: {
+        id: true,
+        path: true,
+      },
+      orderBy: [{ isMain: 'desc' }, { createdAt: 'desc' }],
+    });
+
     this.logger.log(
-      `Residential complex updated successfully (id=${updatedResidentialComplex.id}).`,
+      `Residential complex updated successfully (id=${updatedComplex.id}).`,
     );
 
     return {
       message: 'Residential complex updated successfully.',
-      data: updatedResidentialComplex,
+      data: {
+        ...updatedComplex,
+        files,
+      },
     };
   }
 
   async remove(id: number): Promise<ServiceMessageResponse> {
-    this.logger.log(
-      `Residential complex delete attempt started (id=${id}).`,
-    );
+    this.logger.log(`Residential complex delete attempt started (id=${id}).`);
 
     const residentialComplex =
       await this.prismaService.residentialComplex.findUnique({
@@ -403,7 +359,7 @@ export class ResidentialComplexService {
       select: { path: true },
     });
 
-    const filePaths = files.map(file => file.path);
+    const filePaths = files.map((item) => item.path);
 
     await this.prismaService.$transaction([
       this.prismaService.file.deleteMany({
@@ -417,11 +373,11 @@ export class ResidentialComplexService {
       }),
     ]);
 
-    await removeUploadedFiles(filePaths);
+    if (filePaths.length) {
+      await removeUploadedFiles(filePaths);
+    }
 
-    this.logger.log(
-      `Residential complex deleted successfully (id=${id}).`,
-    );
+    this.logger.log(`Residential complex deleted successfully (id=${id}).`);
 
     return {
       message: 'Residential complex deleted successfully',

@@ -20,6 +20,7 @@ import { RoleGuard } from 'src/common/guards/role.guard';
 import { FindAllUsersDto } from 'src/users/dto/find-all-users.dto';
 import { FilesUploadInterceptor } from 'src/common/interceptors/files-upload.interceptor';
 import { RequiredFilesPipe } from 'src/common/pipe/required-files.pipe';
+import { FileCleanupInterceptor } from 'src/common/interceptors/file-cleanup.interceptor';
 
 @Controller('residential-complex')
 export class ResidentialComplexController {
@@ -29,14 +30,17 @@ export class ResidentialComplexController {
 
   @Post()
   @UseGuards(AuthGuard, RoleGuard)
-  @UseInterceptors(FilesUploadInterceptor('./uploads/residential-complexes'))
+  @UseInterceptors(
+    FilesUploadInterceptor('./uploads/residential-complexes'),
+    FileCleanupInterceptor,
+  )
   async create(
     @Body() createResidentialComplexDto: CreateResidentialComplexDto,
     @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
   ) {
     return await this.residentialComplexService.create(
       createResidentialComplexDto,
-      files.map((file) => file.filename),
+      files.map((item) => item.filename),
     );
   }
 
@@ -45,20 +49,17 @@ export class ResidentialComplexController {
     return await this.residentialComplexService.findAll(query);
   }
 
-  @Get('by-id/:id')
-  @UseGuards(AuthGuard, RoleGuard)
-  async findOneById(@Param('id', ParseIntPipe) id: number) {
-    return await this.residentialComplexService.findOneById(id);
-  }
-
-  @Get(':slug')
-  async findOneBySlug(@Param('slug') slug: string) {
-    return await this.residentialComplexService.findOneBySlug(slug);
+  @Get(':identifier')
+  async findOneBySlug(@Param('identifier') identifier: string) {
+    return await this.residentialComplexService.findOne(identifier);
   }
 
   @Patch(':slug')
   @UseGuards(AuthGuard, RoleGuard)
-  @UseInterceptors(FilesUploadInterceptor('./uploads/residential-complexes'))
+  @UseInterceptors(
+    FilesUploadInterceptor('./uploads/residential-complexes'),
+    FileCleanupInterceptor,
+  )
   async update(
     @Param('slug') slug: string,
     @Body() updateResidentialComplexDto: UpdateResidentialComplexDto,
@@ -67,7 +68,7 @@ export class ResidentialComplexController {
     return await this.residentialComplexService.update(
       slug,
       updateResidentialComplexDto,
-      files?.map((file) => file.filename) ?? []
+      files?.map((item) => item.filename) ?? [],
     );
   }
 

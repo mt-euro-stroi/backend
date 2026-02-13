@@ -1,7 +1,6 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsDateString,
   IsISO8601,
   IsLatitude,
   IsLongitude,
@@ -12,40 +11,43 @@ import {
 
 export class CreateResidentialComplexDto {
   @IsString()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => value?.trim())
   @MaxLength(255)
   name: string;
 
   @IsString()
-  @Transform(({ value }) => value.trim().toLowerCase())
+  @Transform(({ value }) => value?.trim().toLowerCase())
   @MaxLength(255)
   slug: string;
 
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value?.trim())
   description?: string;
 
   @IsString()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => value?.trim())
   @MaxLength(100)
   city: string;
 
   @IsString()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => value?.trim())
   @MaxLength(255)
   address: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsLatitude()
   latitude?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsLongitude()
   longitude?: number;
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => value?.trim())
   @MaxLength(255)
   developerName?: string;
 
@@ -54,6 +56,7 @@ export class CreateResidentialComplexDto {
   completionDate?: string;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isPublished?: boolean;
 }

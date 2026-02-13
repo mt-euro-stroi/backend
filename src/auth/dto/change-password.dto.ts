@@ -8,17 +8,17 @@ import {
 } from 'class-validator';
 
 export class ChangePasswordDto {
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value?.trim())
   @MinLength(6)
   @MaxLength(255)
   @Matches(/^\S+$/, { message: 'Current password must not contain spaces' })
   currentPassword: string;
 
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value?.trim())
   @MinLength(6)
   @MaxLength(255)
   @Matches(/^\S+$/, { message: 'New password must not contain spaces' })

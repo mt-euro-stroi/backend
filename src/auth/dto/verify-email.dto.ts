@@ -8,15 +8,14 @@ import {
 } from 'class-validator';
 
 export class VerifyEmailDto {
+  @Transform(({ value }) => value?.trim())
   @IsEmail()
   @IsNotEmpty()
-  @Transform(({ value }) => value?.trim())
   @MaxLength(255)
   email: string;
 
-  @IsString()
-  @IsNotEmpty()
   @Transform(({ value }) => value?.trim())
+  @IsString()
   @Matches(/^\d{6}$/, { message: 'Verification code must be exactly 6 digits' })
   verificationCode: string;
 }

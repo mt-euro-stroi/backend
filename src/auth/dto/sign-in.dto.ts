@@ -9,15 +9,15 @@ import {
 import { Transform } from 'class-transformer';
 
 export class SignInDto {
+  @Transform(({ value }) => value?.trim())
   @IsEmail()
   @IsNotEmpty()
-  @Transform(({ value }) => value?.trim())
   @MaxLength(255)
   email: string;
 
+  @Transform(({ value }) => value?.trim())
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value?.trim())
   @MinLength(6)
   @MaxLength(255)
   @Matches(/^\S+$/, { message: 'Password must not contain spaces' })

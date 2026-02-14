@@ -66,6 +66,8 @@ model ResidentialComplex {
 
   completionDate  DateTime?  @map("completion_date")
 
+  entrancesCount  Int?       @map("entrances_count")
+
   isPublished     Boolean    @default(false)  @map("is_published")
 
   apartments      Apartment[]
@@ -77,11 +79,15 @@ model ResidentialComplex {
   @@map("residential_complexes")
 }
 
+
 model Apartment {
   id           Int               @id @default(autoincrement())
 
   complexId    Int
   complex      ResidentialComplex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  entrance     Int
+  number       Int
 
   title        String
   rooms        Int
@@ -95,6 +101,7 @@ model Apartment {
 
   // favourites   Favourite[]
   // bookings     Booking[]
+
   files        File[]
 
   createdAt    DateTime          @default(now())
@@ -102,8 +109,13 @@ model Apartment {
 
   @@index([complexId])
   @@index([status])
+  @@index([complexId, status])
+
+  @@unique([complexId, entrance, number])
+
   @@map("apartments")
 }
+
 
 // model Favourite {
 //   id          Int       @id @default(autoincrement())
@@ -142,7 +154,6 @@ model Apartment {
 model File {
   id          Int      @id @default(autoincrement())
   path        String
-  isMain      Boolean  @default(false)
 
   residentialComplexId Int?
   apartmentId          Int?

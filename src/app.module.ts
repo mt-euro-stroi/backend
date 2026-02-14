@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { MailService } from './mail/mail.service';
 import { ResidentialComplexModule } from './residential-complex/residential-complex.module';
+import { ApartmentModule } from './apartment/apartment.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ResidentialComplexModule } from './residential-complex/residential-comp
     }),
     MailModule,
     ResidentialComplexModule,
+    ApartmentModule,
   ],
   controllers: [AppController],
   providers: [AppService, MailService],

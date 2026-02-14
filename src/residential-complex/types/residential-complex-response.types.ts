@@ -5,6 +5,7 @@ export interface ResidentialComplexListItem {
   city: string;
   address: string;
   isPublished: boolean;
+  files: File[];   // 🔹 добавили массив файлов
 }
 
 export interface ResidentialComplexResponse extends ResidentialComplexListItem {
@@ -13,7 +14,6 @@ export interface ResidentialComplexResponse extends ResidentialComplexListItem {
   completionDate?: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  files: File[];
 }
 
 export interface File {

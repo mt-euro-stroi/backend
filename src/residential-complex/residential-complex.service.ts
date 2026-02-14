@@ -51,22 +51,25 @@ export class ResidentialComplexService {
     const residentialComplex = await this.prismaService.$transaction(
       async (tx) => {
         const complex = await tx.residentialComplex.create({
-          data: {
-            ...createResidentialComplexDto,
-          },
+          data: { ...createResidentialComplexDto },
         });
 
-        if (files?.length) {
-          await tx.file.createMany({
-            data: files.map((item, index) => ({
-              path: `residential-complexes/${item}`,
-              residentialComplexId: complex.id,
-              isMain: index === 0,
-            })),
-          });
-        }
+        await tx.file.createMany({
+          data: files.map((item) => ({
+            path: `residential-complexes/${item}`,
+            residentialComplexId: complex.id,
+          })),
+        });
 
-        return complex;
+        return tx.residentialComplex.findUniqueOrThrow({
+          where: { id: complex.id },
+          include: {
+            files: {
+              select: { id: true, path: true },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        });
       },
     );
 
@@ -86,7 +89,6 @@ export class ResidentialComplexService {
     this.logger.log('Residential complexes list request started.');
 
     const { search, isPublished } = query;
-
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -104,8 +106,8 @@ export class ResidentialComplexService {
         : {}),
     };
 
-    const [residentialComplexes, total] = await this.prismaService.$transaction(
-      [
+    const [residentialComplexes, total] =
+      await this.prismaService.$transaction([
         this.prismaService.residentialComplex.findMany({
           where,
           skip,
@@ -113,15 +115,13 @@ export class ResidentialComplexService {
           orderBy: { createdAt: 'desc' },
           include: {
             files: {
-              where: { isMain: true },
-              select: { path: true },
-              take: 1,
+              select: { id: true, path: true },
+              orderBy: { createdAt: 'desc' },
             },
           },
         }),
         this.prismaService.residentialComplex.count({ where }),
-      ],
-    );
+      ]);
 
     const formattedResidentialComplexes = residentialComplexes.map((item) => ({
       id: item.id,
@@ -130,7 +130,7 @@ export class ResidentialComplexService {
       city: item.city,
       address: item.address,
       isPublished: item.isPublished,
-      mainFile: item.files[0]?.path ?? null,
+      files: item.files,
     }));
 
     this.logger.log(
@@ -163,11 +163,8 @@ export class ResidentialComplexService {
         where: isId ? { id: Number(identifier) } : { slug: identifier },
         include: {
           files: {
-            select: {
-              id: true,
-              path: true,
-            },
-            orderBy: [{ isMain: 'desc' }, { createdAt: 'desc' }],
+            select: { id: true, path: true },
+            orderBy: { createdAt: 'desc' },
           },
         },
       });
@@ -217,70 +214,50 @@ export class ResidentialComplexService {
             id: { in: deletedFileIds },
             residentialComplexId: complex.id,
           },
-          select: { id: true, path: true, isMain: true },
+          select: { id: true, path: true },
         })
       : [];
 
-    const mainDeleted = filesToDelete.some((f) => f.isMain);
-
-    const updatedComplex = await this.prismaService.$transaction(async (tx) => {
-      const updated = await tx.residentialComplex.update({
-        where: { slug },
-        data: updateData,
-      });
-
-      if (deletedFileIds.length) {
-        await tx.file.deleteMany({
-          where: {
-            id: { in: deletedFileIds },
-            residentialComplexId: updated.id,
-          },
-        });
-      }
-
-      if (newFiles?.length) {
-        await tx.file.createMany({
-          data: newFiles.map((file) => ({
-            path: `residential-complexes/${file}`,
-            residentialComplexId: updated.id,
-            isMain: false,
-          })),
-        });
-      }
-
-      if (mainDeleted) {
-        const newMain = await tx.file.findFirst({
-          where: {
-            residentialComplexId: updated.id,
-          },
-          orderBy: { createdAt: 'asc' },
+    const updatedComplex = await this.prismaService.$transaction(
+      async (tx) => {
+        const updated = await tx.residentialComplex.update({
+          where: { slug },
+          data: updateData,
         });
 
-        if (newMain) {
-          await tx.file.update({
-            where: { id: newMain.id },
-            data: { isMain: true },
+        if (deletedFileIds.length) {
+          await tx.file.deleteMany({
+            where: {
+              id: { in: deletedFileIds },
+              residentialComplexId: updated.id,
+            },
           });
         }
-      }
 
-      return updated;
-    });
+        if (newFiles?.length) {
+          await tx.file.createMany({
+            data: newFiles.map((file) => ({
+              path: `residential-complexes/${file}`,
+              residentialComplexId: updated.id,
+            })),
+          });
+        }
+
+        return tx.residentialComplex.findUniqueOrThrow({
+          where: { id: updated.id },
+          include: {
+            files: {
+              select: { id: true, path: true },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        });
+      },
+    );
 
     if (filesToDelete.length) {
       await removeUploadedFiles(filesToDelete.map((f) => f.path));
     }
-
-    const files = await this.prismaService.file.findMany({
-      where: {
-        residentialComplexId: updatedComplex.id,
-      },
-      select: {
-        id: true,
-        path: true,
-      },
-      orderBy: [{ isMain: 'desc' }, { createdAt: 'desc' }],
-    });
 
     this.logger.log(
       `Residential complex updated successfully (id=${updatedComplex.id}).`,
@@ -288,10 +265,7 @@ export class ResidentialComplexService {
 
     return {
       message: 'Residential complex updated successfully.',
-      data: {
-        ...updatedComplex,
-        files,
-      },
+      data: updatedComplex,
     };
   }
 

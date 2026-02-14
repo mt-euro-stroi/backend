@@ -2,8 +2,6 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsISO8601,
-  IsLatitude,
-  IsLongitude,
   IsOptional,
   IsString,
   MaxLength,
@@ -13,7 +11,7 @@ export class CreateResidentialComplexDto {
   @IsString()
   @Transform(({ value }) => value?.trim())
   @MaxLength(255)
-  name: string;
+  title: string;
 
   @IsString()
   @Transform(({ value }) => value?.trim().toLowerCase())
@@ -34,16 +32,6 @@ export class CreateResidentialComplexDto {
   @Transform(({ value }) => value?.trim())
   @MaxLength(255)
   address: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsLatitude()
-  latitude?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsLongitude()
-  longitude?: number;
 
   @IsOptional()
   @IsString()

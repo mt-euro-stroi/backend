@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -13,70 +13,146 @@ enum Role {
   USER
 }
 
+enum ApartmentStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
 model User {
-  id        Int     @id @default(autoincrement())
-  firstName String  @db.VarChar(50)  @map("first_name")
-  lastName  String  @db.VarChar(50)  @map("last_name")
+  id                Int      @id @default(autoincrement())
+  firstName         String   @db.VarChar(50)  @map("first_name")
+  lastName          String   @db.VarChar(50)  @map("last_name")
 
-  phone     String  @db.VarChar(12)  @unique
-  email     String  @db.VarChar(255)  @unique
+  phone             String   @unique @db.VarChar(12)
+  email             String   @unique @db.VarChar(255)
 
-  role      Role    @default(USER)
-  isActive  Boolean @default(true) @map("is_active")
+  role              Role     @default(USER)
+  isActive          Boolean  @default(true)   @map("is_active")
 
-  password  String  @db.VarChar(255)
+  password          String   @db.VarChar(255)
 
-  isPhoneVerified   Boolean @default(false) @map("is_phone_verified")
-  isEmailVerified   Boolean @default(false) @map("is_email_verified")
-  verificationCode  String? @db.VarChar(6) @map("verification_code")
+  isPhoneVerified   Boolean  @default(false)  @map("is_phone_verified")
+  isEmailVerified   Boolean  @default(false)  @map("is_email_verified")
+  verificationCode  String?  @db.VarChar(6)   @map("verification_code")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  // favourites        Favourite[]
+  // bookings          Booking[]
+
+  createdAt         DateTime @default(now())  @map("created_at")
+  updatedAt         DateTime @updatedAt       @map("updated_at")
 
   @@map("users")
 }
 
 model ResidentialComplex {
-  id             Int      @id @default(autoincrement())
+  id              Int        @id @default(autoincrement())
 
-  name           String   @db.VarChar(255)
-  slug           String   @unique @db.VarChar(255)
+  title           String     @db.VarChar(255)
+  slug            String     @unique @db.VarChar(255)
 
-  description    String?  @db.Text
+  description     String?    @db.Text
 
-  city           String   @db.VarChar(100)
-  address        String   @db.VarChar(255)
+  city            String     @db.VarChar(100)
+  address         String     @db.VarChar(255)
 
-  latitude       Float?
-  longitude      Float?
+  developerName   String?    @db.VarChar(255) @map("developer_name")
 
-  developerName  String?  @db.VarChar(255) @map("developer_name")
-  completionDate DateTime? @map("completion_date")
+  completionDate  DateTime?  @map("completion_date")
 
-  isPublished    Boolean  @default(false) @map("is_published")
+  isPublished     Boolean    @default(false)  @map("is_published")
 
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  apartments      Apartment[]
+  files           File[]
+
+  createdAt       DateTime   @default(now())  @map("created_at")
+  updatedAt       DateTime   @updatedAt       @map("updated_at")
 
   @@map("residential_complexes")
 }
 
+model Apartment {
+  id           Int               @id @default(autoincrement())
+
+  complexId    Int
+  complex      ResidentialComplex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  title        String
+  rooms        Int
+  area         Decimal           @db.Decimal(10, 2)
+  floor        Int
+  price        Int
+
+  status       ApartmentStatus   @default(AVAILABLE)
+  description  String?           @db.Text
+  isPublished  Boolean           @default(false)
+
+  // favourites   Favourite[]
+  // bookings     Booking[]
+  files        File[]
+
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([complexId])
+  @@index([status])
+  @@map("apartments")
+}
+
+// model Favourite {
+//   id          Int       @id @default(autoincrement())
+
+//   userId      Int
+//   apartmentId Int
+
+//   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+//   createdAt   DateTime  @default(now())
+
+//   @@unique([userId, apartmentId])
+//   @@index([apartmentId])
+//   @@map("favourites")
+// }
+
+// model Booking {
+//   id          Int       @id @default(autoincrement())
+
+//   userId      Int
+//   apartmentId Int
+
+//   status      BookingStatus @default(PENDING)
+
+//   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+//   createdAt   DateTime  @default(now())
+
+//   @@index([userId])
+//   @@index([apartmentId, status])
+//   @@map("bookings")
+// }
+
 model File {
-  id        Int    @id @default(autoincrement())
-  path      String
+  id          Int      @id @default(autoincrement())
+  path        String
+  isMain      Boolean  @default(false)
 
-  entityId   Int
-  entityType FileEntityType
+  residentialComplexId Int?
+  apartmentId          Int?
 
-  isMain     Boolean @default(false)
+  residentialComplex   ResidentialComplex? @relation(fields: [residentialComplexId], references: [id], onDelete: Cascade)
+  apartment            Apartment?          @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@index([entityType, entityId, isMain])
+  @@index([residentialComplexId])
+  @@index([apartmentId])
   @@map("files")
-}
-
-enum FileEntityType {
-  RESIDENTIAL_COMPLEX
-  APARTMENT
 }

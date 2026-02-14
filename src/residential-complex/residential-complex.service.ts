@@ -56,14 +56,15 @@ export class ResidentialComplexService {
           },
         });
 
-        await tx.file.createMany({
-          data: files.map((item, index) => ({
-            path: `residential-complexes/${item}`,
-            entityId: complex.id,
-            entityType: 'RESIDENTIAL_COMPLEX',
-            isMain: index === 0,
-          })),
-        });
+        if (files?.length) {
+          await tx.file.createMany({
+            data: files.map((item, index) => ({
+              path: `residential-complexes/${item}`,
+              residentialComplexId: complex.id,
+              isMain: index === 0,
+            })),
+          });
+        }
 
         return complex;
       },
@@ -95,7 +96,7 @@ export class ResidentialComplexService {
       ...(search
         ? {
             OR: [
-              { name: { contains: search, mode: 'insensitive' } },
+              { title: { contains: search, mode: 'insensitive' } },
               { city: { contains: search, mode: 'insensitive' } },
               { address: { contains: search, mode: 'insensitive' } },
             ],
@@ -110,61 +111,30 @@ export class ResidentialComplexService {
           skip,
           take: limit,
           orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            city: true,
-            address: true,
-            isPublished: true,
+          include: {
+            files: {
+              where: { isMain: true },
+              select: { path: true },
+              take: 1,
+            },
           },
         }),
         this.prismaService.residentialComplex.count({ where }),
       ],
     );
 
-    if (residentialComplexes.length === 0) {
-      this.logger.log(
-        `Residential complexes list retrieved: items=0, total=${total}, page=${page}.`,
-      );
-
-      return {
-        message: 'Residential complexes retrieved successfully.',
-        data: {
-          items: [],
-          total,
-          page,
-          limit,
-          pages: Math.ceil(total / limit),
-        },
-      };
-    }
-
-    const ids = residentialComplexes.map((item) => item.id);
-
-    const mainFiles = await this.prismaService.file.findMany({
-      where: {
-        entityType: 'RESIDENTIAL_COMPLEX',
-        entityId: { in: ids },
-        isMain: true,
-      },
-      select: {
-        entityId: true,
-        path: true,
-      },
-    });
-
-    const mainFileMap = new Map(
-      mainFiles.map((item) => [item.entityId, item.path]),
-    );
-
     const formattedResidentialComplexes = residentialComplexes.map((item) => ({
-      ...item,
-      mainFile: mainFileMap.get(item.id) ?? null,
+      id: item.id,
+      title: item.title,
+      slug: item.slug,
+      city: item.city,
+      address: item.address,
+      isPublished: item.isPublished,
+      mainFile: item.files[0]?.path ?? null,
     }));
 
     this.logger.log(
-      `Residential complexes list retrieved: items=${residentialComplexes.length}, total=${total}, page=${page}.`,
+      `Residential complexes list retrieved: items=${formattedResidentialComplexes.length}, total=${total}, page=${page}.`,
     );
 
     return {
@@ -191,6 +161,15 @@ export class ResidentialComplexService {
     const residentialComplex =
       await this.prismaService.residentialComplex.findUnique({
         where: isId ? { id: Number(identifier) } : { slug: identifier },
+        include: {
+          files: {
+            select: {
+              id: true,
+              path: true,
+            },
+            orderBy: [{ isMain: 'desc' }, { createdAt: 'desc' }],
+          },
+        },
       });
 
     if (!residentialComplex) {
@@ -200,28 +179,13 @@ export class ResidentialComplexService {
       throw new NotFoundException('Residential complex not found');
     }
 
-    const files = await this.prismaService.file.findMany({
-      where: {
-        entityId: residentialComplex.id,
-        entityType: 'RESIDENTIAL_COMPLEX',
-      },
-      select: {
-        id: true,
-        path: true,
-      },
-      orderBy: [{ isMain: 'desc' }, { createdAt: 'desc' }],
-    });
-
     this.logger.log(
       `Residential complex retrieved successfully (id=${residentialComplex.id}).`,
     );
 
     return {
       message: 'Residential complex retrieved successfully.',
-      data: {
-        ...residentialComplex,
-        files,
-      },
+      data: residentialComplex,
     };
   }
 
@@ -251,8 +215,7 @@ export class ResidentialComplexService {
       ? await this.prismaService.file.findMany({
           where: {
             id: { in: deletedFileIds },
-            entityId: complex.id,
-            entityType: 'RESIDENTIAL_COMPLEX',
+            residentialComplexId: complex.id,
           },
           select: { id: true, path: true, isMain: true },
         })
@@ -270,8 +233,7 @@ export class ResidentialComplexService {
         await tx.file.deleteMany({
           where: {
             id: { in: deletedFileIds },
-            entityId: updated.id,
-            entityType: 'RESIDENTIAL_COMPLEX',
+            residentialComplexId: updated.id,
           },
         });
       }
@@ -280,8 +242,7 @@ export class ResidentialComplexService {
         await tx.file.createMany({
           data: newFiles.map((file) => ({
             path: `residential-complexes/${file}`,
-            entityId: updated.id,
-            entityType: 'RESIDENTIAL_COMPLEX',
+            residentialComplexId: updated.id,
             isMain: false,
           })),
         });
@@ -290,8 +251,7 @@ export class ResidentialComplexService {
       if (mainDeleted) {
         const newMain = await tx.file.findFirst({
           where: {
-            entityId: updated.id,
-            entityType: 'RESIDENTIAL_COMPLEX',
+            residentialComplexId: updated.id,
           },
           orderBy: { createdAt: 'asc' },
         });
@@ -313,8 +273,7 @@ export class ResidentialComplexService {
 
     const files = await this.prismaService.file.findMany({
       where: {
-        entityId: updatedComplex.id,
-        entityType: 'RESIDENTIAL_COMPLEX',
+        residentialComplexId: updatedComplex.id,
       },
       select: {
         id: true,
@@ -342,6 +301,11 @@ export class ResidentialComplexService {
     const residentialComplex =
       await this.prismaService.residentialComplex.findUnique({
         where: { id },
+        include: {
+          files: {
+            select: { path: true },
+          },
+        },
       });
 
     if (!residentialComplex) {
@@ -351,27 +315,11 @@ export class ResidentialComplexService {
       throw new NotFoundException('Residential complex not found');
     }
 
-    const files = await this.prismaService.file.findMany({
-      where: {
-        entityId: id,
-        entityType: 'RESIDENTIAL_COMPLEX',
-      },
-      select: { path: true },
+    const filePaths = residentialComplex.files.map((file) => file.path);
+
+    await this.prismaService.residentialComplex.delete({
+      where: { id },
     });
-
-    const filePaths = files.map((item) => item.path);
-
-    await this.prismaService.$transaction([
-      this.prismaService.file.deleteMany({
-        where: {
-          entityId: id,
-          entityType: 'RESIDENTIAL_COMPLEX',
-        },
-      }),
-      this.prismaService.residentialComplex.delete({
-        where: { id },
-      }),
-    ]);
 
     if (filePaths.length) {
       await removeUploadedFiles(filePaths);

@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFiles, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { ApartmentService } from './apartment.service';
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
@@ -7,6 +20,7 @@ import { RoleGuard } from 'src/common/guards/role.guard';
 import { FilesUploadInterceptor } from 'src/common/interceptors/files-upload.interceptor';
 import { FileCleanupInterceptor } from 'src/common/interceptors/file-cleanup.interceptor';
 import { RequiredFilesPipe } from 'src/common/pipe/required-files.pipe';
+import { FindAllResidentialComplexesDto } from 'src/residential-complex/dto/find-all-residential-complexes.dto';
 
 @Controller('apartment')
 export class ApartmentController {
@@ -16,21 +30,21 @@ export class ApartmentController {
   @UseGuards(AuthGuard, RoleGuard)
   @UseInterceptors(
     FilesUploadInterceptor('./uploads/apartments'),
-    FileCleanupInterceptor
+    FileCleanupInterceptor,
   )
   async create(
     @Body() createApartmentDto: CreateApartmentDto,
-    @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[]
+    @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
   ) {
     return await this.apartmentService.create(
       createApartmentDto,
-      files.map((item) => item.filename)
+      files.map((item) => item.filename),
     );
   }
 
   @Get()
-  async findAll() {
-    return await this.apartmentService.findAll();
+  async findAll(@Query() query: FindAllResidentialComplexesDto) {
+    return await this.apartmentService.findAll(query);
   }
 
   @Get(':id')
@@ -42,12 +56,12 @@ export class ApartmentController {
   @UseGuards(AuthGuard, RoleGuard)
   @UseInterceptors(
     FilesUploadInterceptor('./uploads/apartments'),
-    FileCleanupInterceptor
+    FileCleanupInterceptor,
   )
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateApartmentDto: UpdateApartmentDto,
-    @UploadedFiles() files: Express.Multer.File[]
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     return await this.apartmentService.update(
       id,

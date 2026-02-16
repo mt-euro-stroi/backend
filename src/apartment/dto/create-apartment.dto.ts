@@ -1,6 +1,5 @@
 import {
   IsBoolean,
-  IsDecimal,
   IsEnum,
   IsInt,
   IsNumber,
@@ -8,15 +7,16 @@ import {
   IsString,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApartmentStatus } from 'src/generated/prisma/enums';
 
 export class CreateApartmentDto {
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  complexId: number;
+  @IsString()
+  @Transform(({ value }) => value?.trim())
+  @MinLength(1)
+  complexSlug: string;
 
   @Type(() => Number)
   @IsInt()
@@ -28,11 +28,6 @@ export class CreateApartmentDto {
   @Min(1)
   number: number;
 
-  @IsString()
-  @Transform(({ value }) => value?.trim())
-  @MaxLength(255)
-  title: string;
-
   @Type(() => Number)
   @IsInt()
   @Min(0)
@@ -41,7 +36,7 @@ export class CreateApartmentDto {
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  area: string;
+  area: number;
 
   @Type(() => Number)
   @IsInt()

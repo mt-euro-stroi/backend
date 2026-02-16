@@ -1,9 +1,11 @@
+import { Role } from 'src/generated/prisma/enums';
+
 export interface UserListItem {
   id: number;
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
+  role: Role;
   isActive: boolean;
 }
 

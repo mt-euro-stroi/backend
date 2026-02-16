@@ -17,10 +17,10 @@ import { CreateResidentialComplexDto } from './dto/create-residential-complex.dt
 import { UpdateResidentialComplexDto } from './dto/update-residential-complex.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
-import { FindAllUsersDto } from 'src/users/dto/find-all-users.dto';
 import { FilesUploadInterceptor } from 'src/common/interceptors/files-upload.interceptor';
 import { RequiredFilesPipe } from 'src/common/pipe/required-files.pipe';
 import { FileCleanupInterceptor } from 'src/common/interceptors/file-cleanup.interceptor';
+import { FindAllResidentialComplexesDto } from './dto/find-all-residential-complexes.dto';
 
 @Controller('residential-complex')
 export class ResidentialComplexController {
@@ -45,7 +45,7 @@ export class ResidentialComplexController {
   }
 
   @Get()
-  async findAll(@Query() query: FindAllUsersDto) {
+  async findAll(@Query() query: FindAllResidentialComplexesDto) {
     return await this.residentialComplexService.findAll(query);
   }
 

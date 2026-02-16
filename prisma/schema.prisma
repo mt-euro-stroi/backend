@@ -89,7 +89,6 @@ model Apartment {
   entrance     Int
   number       Int
 
-  title        String
   rooms        Int
   area         Decimal           @db.Decimal(10, 2)
   floor        Int
@@ -107,9 +106,9 @@ model Apartment {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
-  @@index([complexId])
   @@index([status])
   @@index([complexId, status])
+  @@index([price])
 
   @@unique([complexId, entrance, number])
 

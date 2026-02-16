@@ -1,7 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsISO8601,
+  IsDate,
   IsOptional,
   IsString,
   MaxLength,
@@ -40,8 +40,9 @@ export class CreateResidentialComplexDto {
   developerName?: string;
 
   @IsOptional()
-  @IsISO8601()
-  completionDate?: string;
+  @Type(() => Date)
+  @IsDate()
+  completionDate?: Date;
 
   @IsOptional()
   @Type(() => Boolean)

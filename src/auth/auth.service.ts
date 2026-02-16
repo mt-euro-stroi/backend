@@ -18,6 +18,7 @@ import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
 import { ServiceMessageResponse } from 'src/common/types/service-response.types';
 import { AuthWithTokenResponse } from './types/auth-response.types';
 import type { AuthUser } from 'src/common/types/auth-user.type';
+import { User } from 'src/generated/prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +36,14 @@ export class AuthService {
       .catch((error) =>
         this.logger.error('Failed to send verification email', error.stack),
       );
+  }
+
+  private async generateAccessToken(user: User) {
+    return this.jwtService.signAsync({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
   }
 
   async signUp(signUpDto: SignUpDto): Promise<ServiceMessageResponse> {
@@ -129,11 +138,7 @@ export class AuthService {
       };
     }
 
-    const accessToken = await this.jwtService.signAsync({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    const accessToken = await this.generateAccessToken(user);
 
     this.logger.log(`Sign in successful (userId=${user.id}).`);
 
@@ -183,11 +188,7 @@ export class AuthService {
       },
     });
 
-    const accessToken = await this.jwtService.signAsync({
-      sub: updatedUser.id,
-      email: updatedUser.email,
-      role: updatedUser.role,
-    });
+    const accessToken = await this.generateAccessToken(updatedUser);
 
     this.logger.log(`Email verified successfully (userId=${updatedUser.id}).`);
 

@@ -3,7 +3,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-export function FilesUploadInterceptor(destination: string, maxFiles = 10) {
+export function FilesUploadInterceptor(destination: string, maxFiles = 5) {
   return FilesInterceptor('files', maxFiles, {
     storage: diskStorage({
       destination,

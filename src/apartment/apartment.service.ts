@@ -63,6 +63,7 @@ export class ApartmentService {
         slug: true,
         city: true,
         address: true,
+        priceFrom: true
       },
     });
 
@@ -77,6 +78,7 @@ export class ApartmentService {
       const existingApartment = await tx.apartment.findFirst({
         where: {
           number: createApartmentDto.number,
+          entrance: createApartmentDto.entrance,
           complexId: complex.id,
         },
       });
@@ -85,6 +87,13 @@ export class ApartmentService {
         throw new ConflictException(
           'Apartment with this number already exists in the complex.',
         );
+      }
+
+      if (complex.priceFrom === null || apartmentData.price < complex.priceFrom) {
+        await tx.residentialComplex.update({
+          where: { id: complex.id },
+          data: { priceFrom: apartmentData.price },
+        });
       }
 
       const createdApartment = await tx.apartment.create({
@@ -124,30 +133,15 @@ export class ApartmentService {
       page = 1,
       limit = 20,
       search,
-      complexSlug,
       minPrice,
       maxPrice,
       rooms,
       floor,
       status,
+      isPublished,
     } = query;
 
     const skip = (page - 1) * limit;
-
-    let complexId: number | undefined;
-
-    if (complexSlug) {
-      const complex = await this.prismaService.residentialComplex.findUnique({
-        where: { slug: complexSlug },
-        select: { id: true },
-      });
-
-      if (!complex) {
-        throw new NotFoundException('Residential complex not found.');
-      }
-
-      complexId = complex.id;
-    }
 
     const priceFilter =
       minPrice !== undefined || maxPrice !== undefined
@@ -160,19 +154,15 @@ export class ApartmentService {
         : {};
 
     const where = {
-      ...(complexId !== undefined && { complexId }),
-      ...(status && { status }),
+      ...(status !== undefined && { status }),
       ...(rooms !== undefined && { rooms }),
       ...(floor !== undefined && { floor }),
+      ...(isPublished !== undefined && { isPublished }),
       ...priceFilter,
+
       ...(search?.trim() && {
         OR: [
-          { description: { contains: search, mode: 'insensitive' } },
-          {
-            complex: {
-              title: { contains: search, mode: 'insensitive' },
-            },
-          },
+          { description: { search } },
         ],
       }),
     };

@@ -138,7 +138,7 @@ Authorization: Bearer <access_token>
 | Метод | Endpoint | Описание | Auth | Параметр |
 |-------|----------|---------|------|----------|
 | POST | `/residential-complex` | Создать жилой комплекс | ✅ | - |
-| GET | `/residential-complex` | Получить все жилые комплексы | ❌ | `page`, `limit`, `search` |
+| GET | `/residential-complex` | Получить все жилые комплексы | ❌ | `page`, `limit` |
 | GET | `/residential-complex/:identifier` | Получить комплекс | ❌ | `id` или `slug` * |
 | PATCH | `/residential-complex/:slug` | Обновить комплекс | ✅ | `slug` |
 | DELETE | `/residential-complex/:id` | Удалить комплекс | ✅ | `id` |
@@ -160,47 +160,14 @@ Authorization: Bearer <access_token>
 ---
 
 ## ❤️ Favourites
-
-| Метод | Endpoint | Описание | Auth |
-|-------|----------|---------|------|
-| POST | `/favourites` | Добавить в избранное | ✅ |
-| GET | `/favourites` | Получить избранные | ✅ |
-| GET | `/favourites/:id` | Получить избранное по ID | ✅ |
-| PATCH | `/favourites/:id` | Обновить избранное | ✅ |
-| DELETE | `/favourites/:id` | Удалить из избранного | ✅ |
+### 🚧 Work In Progress (WIP)
+Эндпоинты могут быть изменены или временно недоступны.
 
 ---
 
 ## 📅 Bookings
-
-| Метод | Endpoint | Описание | Auth |
-|-------|----------|---------|------|
-| POST | `/bookings` | Создать бронирование | ✅ |
-| GET | `/bookings` | Получить все бронирования | ✅ |
-| GET | `/bookings/:id` | Получить бронирование по ID | ✅ |
-| PATCH | `/bookings/:id` | Обновить бронирование | ✅ |
-| DELETE | `/bookings/:id` | Отменить бронирование | ✅ |
-
----
-
-## � Использование Slug
-
-Некоторые эндпоинты используют `slug` вместо числовых ID для удобства URL-адресации.
-
-### Residential Complex
-
-- **GET** `/residential-complex/:identifier` - принимает как ID так и slug
-  - Примеры: `/residential-complex/1` (ID) или `/residential-complex/elite-residence` (slug)
-  
-- **PATCH** `/residential-complex/:slug` - требует именно slug
-  - Пример: `/residential-complex/elite-residence`
-
-- **DELETE** `/residential-complex/:id` - требует числовой ID
-  - Пример: `/residential-complex/1`
-
-### Apartments
-
-- Все эндпоинты используют числовой ID
+### 🚧 Work In Progress (WIP)
+Эндпоинты могут быть изменены или временно недоступны.
 
 ---
 

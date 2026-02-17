@@ -27,61 +27,68 @@ enum BookingStatus {
 
 model User {
   id                Int      @id @default(autoincrement())
-  firstName         String   @db.VarChar(50)  @map("first_name")
-  lastName          String   @db.VarChar(50)  @map("last_name")
+
+  firstName         String   @db.VarChar(50)   @map("first_name")
+  lastName          String   @db.VarChar(50)   @map("last_name")
 
   phone             String   @unique @db.VarChar(12)
   email             String   @unique @db.VarChar(255)
 
   role              Role     @default(USER)
-  isActive          Boolean  @default(true)   @map("is_active")
+  isActive          Boolean  @default(true)    @map("is_active")
 
   password          String   @db.VarChar(255)
 
-  isPhoneVerified   Boolean  @default(false)  @map("is_phone_verified")
-  isEmailVerified   Boolean  @default(false)  @map("is_email_verified")
-  verificationCode  String?  @db.VarChar(6)   @map("verification_code")
+  isPhoneVerified   Boolean  @default(false)   @map("is_phone_verified")
+  isEmailVerified   Boolean  @default(false)   @map("is_email_verified")
+  verificationCode  String?  @db.VarChar(6)    @map("verification_code")
 
-  // favourites        Favourite[]
-  // bookings          Booking[]
+  favourites        Favourite[]
+  bookings          Booking[]
 
-  createdAt         DateTime @default(now())  @map("created_at")
-  updatedAt         DateTime @updatedAt       @map("updated_at")
+  createdAt         DateTime @default(now())   @map("created_at")
+  updatedAt         DateTime @updatedAt        @map("updated_at")
+
+  @@index([isActive])
+  @@index([createdAt])
 
   @@map("users")
 }
 
 model ResidentialComplex {
-  id              Int        @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
 
-  title           String     @db.VarChar(255)
-  slug            String     @unique @db.VarChar(255)
+  title           String    @db.VarChar(255)
+  slug            String    @unique @db.VarChar(255)
 
-  description     String?    @db.Text
+  description     String?   @db.Text
 
-  city            String     @db.VarChar(100)
-  address         String     @db.VarChar(255)
+  city            String    @db.VarChar(100)
+  address         String    @db.VarChar(255)
 
-  developerName   String?    @db.VarChar(255) @map("developer_name")
+  completionDate  DateTime? @map("completion_date")
 
-  completionDate  DateTime?  @map("completion_date")
+  priceFrom       Int?      @map("price_from")
 
-  entrancesCount  Int?       @map("entrances_count")
-
-  isPublished     Boolean    @default(false)  @map("is_published")
+  isPublished     Boolean   @default(false) @map("is_published")
 
   apartments      Apartment[]
   files           File[]
 
-  createdAt       DateTime   @default(now())  @map("created_at")
-  updatedAt       DateTime   @updatedAt       @map("updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt      @map("updated_at")
+
+  @@fulltext([title, city, address])
+
+  @@index([isPublished])
+
+  @@index([createdAt])
 
   @@map("residential_complexes")
 }
 
-
 model Apartment {
-  id           Int               @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
 
   complexId    Int
   complex      ResidentialComplex @relation(fields: [complexId], references: [id], onDelete: Cascade)
@@ -90,62 +97,76 @@ model Apartment {
   number       Int
 
   rooms        Int
-  area         Decimal           @db.Decimal(10, 2)
+  area         Decimal   @db.Decimal(10,2)
   floor        Int
   price        Int
 
-  status       ApartmentStatus   @default(AVAILABLE)
-  description  String?           @db.Text
-  isPublished  Boolean           @default(false)
+  status       ApartmentStatus @default(AVAILABLE)
+  isPublished  Boolean         @default(false)
+
+  description  String?   @db.Text
 
   files        File[]
 
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  favourites        Favourite[]
+  bookings          Booking[]
 
-  @@index([status])
-  @@index([complexId, status])
-  @@index([price])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@unique([complexId, entrance, number])
+
+  @@index([complexId, isPublished, createdAt])
+
+  @@index([price])
+
+  @@index([floor])
+
+  @@fulltext([description])
 
   @@map("apartments")
 }
 
+model Favourite {
+  id          Int       @id @default(autoincrement())
 
-// model Favourite {
-//   id          Int       @id @default(autoincrement())
+  userId      Int
+  apartmentId Int
 
-//   userId      Int
-//   apartmentId Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 
-//   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
 
-//   createdAt   DateTime  @default(now())
+  @@unique([userId, apartmentId])
+  @@index([userId])
+  @@index([apartmentId])
 
-//   @@unique([userId, apartmentId])
-//   @@index([apartmentId])
-//   @@map("favourites")
-// }
+  @@map("favourites")
+}
 
-// model Booking {
-//   id          Int       @id @default(autoincrement())
 
-//   userId      Int
-//   apartmentId Int
+model Booking {
+  id          Int       @id @default(autoincrement())
 
-//   status      BookingStatus @default(PENDING)
+  userId      Int
+  apartmentId Int
 
-//   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  status      BookingStatus @default(PENDING)
 
-//   createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 
-//   @@index([userId])
-//   @@index([apartmentId, status])
-//   @@map("bookings")
-// }
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, apartmentId])
+  @@index([userId])
+  @@index([apartmentId])
+  @@index([apartmentId, status])
+
+  @@map("bookings")
+}
+
 
 model File {
   id          Int      @id @default(autoincrement())

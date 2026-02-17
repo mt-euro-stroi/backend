@@ -28,7 +28,7 @@ export class FindAllUsersDto {
   search?: string;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
 }

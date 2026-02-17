@@ -90,7 +90,12 @@ export class ResidentialComplexService {
   ): Promise<ServiceDataResponse<PaginatedResult<ResidentialComplexListItem>>> {
     this.logger.log('Residential complexes list request started.');
 
-    const { page = 1, limit = 20, search, isPublished } = query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      isPublished
+    } = query;
 
     const skip = (page - 1) * limit;
 
@@ -98,10 +103,9 @@ export class ResidentialComplexService {
       ...(isPublished !== undefined && { isPublished }),
       ...(search && {
         OR: [
-          { title: { contains: search } },
-          { city: { contains: search } },
-          { address: { contains: search } },
-          { slug: { contains: search } },
+          { title: { search } },
+          { city: { search } },
+          { address: { search } },
         ],
       }),
     };
@@ -125,6 +129,7 @@ export class ResidentialComplexService {
       slug: item.slug,
       city: item.city,
       address: item.address,
+      priceFrom: item.priceFrom,
       isPublished: item.isPublished,
       files: item.files,
     }));

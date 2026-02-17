@@ -2,9 +2,11 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
+  IsInt,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export class CreateResidentialComplexDto {
@@ -34,15 +36,15 @@ export class CreateResidentialComplexDto {
   address: string;
 
   @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value?.trim())
-  @MaxLength(255)
-  developerName?: string;
-
-  @IsOptional()
   @Type(() => Date)
   @IsDate()
   completionDate?: Date;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  priceFrom?: number;
 
   @IsOptional()
   @Type(() => Boolean)

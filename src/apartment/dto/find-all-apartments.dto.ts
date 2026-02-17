@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApartmentStatus } from 'src/generated/prisma/enums';
 
@@ -53,4 +53,9 @@ export class FindAllApartmentsDto {
   @IsOptional()
   @IsEnum(ApartmentStatus)
   status?: ApartmentStatus;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  isPublished?: boolean;
 }

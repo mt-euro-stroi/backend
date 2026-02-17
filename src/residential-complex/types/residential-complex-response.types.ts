@@ -7,6 +7,7 @@ export interface ResidentialComplexListItem {
   slug: string;
   city: string;
   address: string;
+  priceFrom?: number | null;
   isPublished: boolean;
   files: File[];
 }
@@ -26,8 +27,6 @@ export interface ResidentialComplexApartmentCard {
 
 export interface ResidentialComplexResponse extends ResidentialComplexListItem {
   description?: string | null;
-  entrancesCount?: number | null;
-  developerName?: string | null;
   completionDate?: Date | null;
   apartments?: ResidentialComplexApartmentCard[];
   createdAt: Date;

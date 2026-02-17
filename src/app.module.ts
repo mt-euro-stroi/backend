@@ -10,6 +10,8 @@ import { UsersModule } from './users/users.module';
 import { MailService } from './mail/mail.service';
 import { ResidentialComplexModule } from './residential-complex/residential-complex.module';
 import { ApartmentModule } from './apartment/apartment.module';
+import { FavouritesModule } from './favourites/favourites.module';
+import { BookingsModule } from './bookings/bookings.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { ApartmentModule } from './apartment/apartment.module';
     MailModule,
     ResidentialComplexModule,
     ApartmentModule,
+    FavouritesModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService, MailService],

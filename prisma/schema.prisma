@@ -98,9 +98,6 @@ model Apartment {
   description  String?           @db.Text
   isPublished  Boolean           @default(false)
 
-  // favourites   Favourite[]
-  // bookings     Booking[]
-
   files        File[]
 
   createdAt    DateTime          @default(now())

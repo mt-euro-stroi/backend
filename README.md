@@ -1,98 +1,209 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# MT Euro Stroy Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API для проекта MT Euro Stroy.  
+Стек: NestJS, Prisma, MySQL, JWT Auth, Nodemailer.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🚀 Технологии
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- NestJS
+- Prisma ORM
+- MySQL
+- JWT (Access Token)
+- Nodemailer (SMTP)
+- CORS
+- Multer (File Upload)
 
-## Project setup
+---
+
+# 📦 Установка и запуск
+
+## 1️⃣ Клонирование проекта
 
 ```bash
-$ npm install
+git clone <repo_url>
+cd <project_folder>
 ```
 
-## Compile and run the project
+## 2️⃣ Установка зависимостей
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+## 3️⃣ Настройка переменных окружения
+
+Создать файл `.env` в корне проекта:
+
+```env
+# Server
+PORT=3001
+
+# Database
+DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/DATABASE_NAME"
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=your_database_name
+
+# JWT
+JWT_ACCESS_SECRET=your_jwt_secret_key_min_32_chars
+JWT_ACCESS_EXPIRES_IN=86400
+
+# Email (Gmail SMTP)
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_SECURE=false
+MAIL_USER=your@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIN_FROM=your@gmail.com
+
+# Frontend
+FRONTEND_URL=http://localhost:3000
+```
+
+## 4️⃣ Запуск Prisma
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npx prisma generate
+npx prisma db push
 ```
 
-## Deployment
+## 5️⃣ Запуск сервера
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Development
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Production
 
-## Resources
+```bash
+npm run build
+npm run start:prod
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 🌐 API Base URL
 
-## Support
+```
+http://localhost:3001
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+---
 
-## Stay in touch
+## 🔐 Авторизация
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Проект использует JWT (Bearer Token).
+В защищённых запросах необходимо передавать заголовок:
 
-## License
+```
+Authorization: Bearer <access_token>
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
+
+# 📌 API Endpoints
+
+## 👤 Auth
+
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|---------|------|
+| POST | `/auth/sign-up` | Регистрация | ❌ |
+| POST | `/auth/sign-in` | Вход в систему | ❌ |
+| POST | `/auth/verify-email` | Верификация email | ❌ |
+| POST | `/auth/resend-verification-code` | Переправить код | ❌ |
+| PATCH | `/auth/change-password` | Изменить пароль | ✅ |
+
+---
+
+## 👥 Users
+
+| Метод | Endpoint | Описание | Auth | Роль |
+|-------|----------|---------|------|------|
+| GET | `/users` | Получить всех пользователей | ✅ | Admin |
+| GET | `/users/me` | Получить профиль текущего пользователя | ✅ | Any |
+| GET | `/users/:id` | Получить пользователя по ID | ✅ | Admin |
+| PATCH | `/users/me` | Обновить профиль | ✅ | Any |
+| DELETE | `/users/me` | Удалить аккаунт | ✅ | Any |
+
+---
+
+## 🏢 Residential Complex
+
+| Метод | Endpoint | Описание | Auth | Параметр |
+|-------|----------|---------|------|----------|
+| POST | `/residential-complex` | Создать жилой комплекс | ✅ | - |
+| GET | `/residential-complex` | Получить все жилые комплексы | ❌ | `page`, `limit`, `search` |
+| GET | `/residential-complex/:identifier` | Получить комплекс | ❌ | `id` или `slug` * |
+| PATCH | `/residential-complex/:slug` | Обновить комплекс | ✅ | `slug` |
+| DELETE | `/residential-complex/:id` | Удалить комплекс | ✅ | `id` |
+
+*️⃣ `:identifier` - может быть как числовой ID, так и slug
+
+---
+
+## 🏠 Apartments
+
+| Метод | Endpoint | Описание | Auth | Параметр |
+|-------|----------|---------|------|----------|
+| POST | `/apartment` | Создать квартиру | ✅ | - |
+| GET | `/apartment` | Получить все квартиры | ❌ | `complexSlug`, `page`, `limit` |
+| GET | `/apartment/:id` | Получить квартиру по ID | ❌ | `id` |
+| PATCH | `/apartment/:id` | Обновить квартиру | ✅ | `id` |
+| DELETE | `/apartment/:id` | Удалить квартиру | ✅ | `id` |
+
+---
+
+## ❤️ Favourites
+
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|---------|------|
+| POST | `/favourites` | Добавить в избранное | ✅ |
+| GET | `/favourites` | Получить избранные | ✅ |
+| GET | `/favourites/:id` | Получить избранное по ID | ✅ |
+| PATCH | `/favourites/:id` | Обновить избранное | ✅ |
+| DELETE | `/favourites/:id` | Удалить из избранного | ✅ |
+
+---
+
+## 📅 Bookings
+
+| Метод | Endpoint | Описание | Auth |
+|-------|----------|---------|------|
+| POST | `/bookings` | Создать бронирование | ✅ |
+| GET | `/bookings` | Получить все бронирования | ✅ |
+| GET | `/bookings/:id` | Получить бронирование по ID | ✅ |
+| PATCH | `/bookings/:id` | Обновить бронирование | ✅ |
+| DELETE | `/bookings/:id` | Отменить бронирование | ✅ |
+
+---
+
+## � Использование Slug
+
+Некоторые эндпоинты используют `slug` вместо числовых ID для удобства URL-адресации.
+
+### Residential Complex
+
+- **GET** `/residential-complex/:identifier` - принимает как ID так и slug
+  - Примеры: `/residential-complex/1` (ID) или `/residential-complex/elite-residence` (slug)
+  
+- **PATCH** `/residential-complex/:slug` - требует именно slug
+  - Пример: `/residential-complex/elite-residence`
+
+- **DELETE** `/residential-complex/:id` - требует числовой ID
+  - Пример: `/residential-complex/1`
+
+### Apartments
+
+- Все эндпоинты используют числовой ID
+
+---
+
+## �📝 Лицензия
+
+UNLICENSED

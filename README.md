@@ -138,7 +138,7 @@ Authorization: Bearer <access_token>
 | Метод | Endpoint | Описание | Auth | Параметр |
 |-------|----------|---------|------|----------|
 | POST | `/residential-complex` | Создать жилой комплекс | ✅ | - |
-| GET | `/residential-complex` | Получить все жилые комплексы | ❌ | `page`, `limit` |
+| GET | `/residential-complex` | Получить все жилые комплексы | ❌ | `page`, `limit`, `search`, `isPublished` |
 | GET | `/residential-complex/:identifier` | Получить комплекс | ❌ | `id` или `slug` * |
 | PATCH | `/residential-complex/:slug` | Обновить комплекс | ✅ | `slug` |
 | DELETE | `/residential-complex/:id` | Удалить комплекс | ✅ | `id` |
@@ -152,7 +152,7 @@ Authorization: Bearer <access_token>
 | Метод | Endpoint | Описание | Auth | Параметр |
 |-------|----------|---------|------|----------|
 | POST | `/apartment` | Создать квартиру | ✅ | - |
-| GET | `/apartment` | Получить все квартиры | ❌ | `complexSlug`, `page`, `limit` |
+| GET | `/apartment` | Получить все квартиры | ❌ | `page`, `limit`, `status`, `rooms`, `floor`, `minPrice`, `maxPrice`, `isPublished`|
 | GET | `/apartment/:id` | Получить квартиру по ID | ❌ | `id` |
 | PATCH | `/apartment/:id` | Обновить квартиру | ✅ | `id` |
 | DELETE | `/apartment/:id` | Удалить квартиру | ✅ | `id` |

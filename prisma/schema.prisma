@@ -31,8 +31,8 @@ model User {
   firstName         String   @db.VarChar(50)   @map("first_name")
   lastName          String   @db.VarChar(50)   @map("last_name")
 
-  phone             String   @unique @db.VarChar(12)
-  email             String   @unique @db.VarChar(255)
+  phone             String   @db.VarChar(12)
+  email             String   @db.VarChar(255)
 
   role              Role     @default(USER)
   isActive          Boolean  @default(true)    @map("is_active")
@@ -49,6 +49,9 @@ model User {
   createdAt         DateTime @default(now())   @map("created_at")
   updatedAt         DateTime @updatedAt        @map("updated_at")
 
+  @@unique([phone])
+  @@unique([email])
+
   @@index([isActive])
   @@index([createdAt])
 
@@ -59,7 +62,7 @@ model ResidentialComplex {
   id              Int       @id @default(autoincrement())
 
   title           String    @db.VarChar(255)
-  slug            String    @unique @db.VarChar(255)
+  slug            String    @db.VarChar(255)
 
   description     String?   @db.Text
 
@@ -78,14 +81,16 @@ model ResidentialComplex {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt      @map("updated_at")
 
+  @@unique([slug])
+
   @@fulltext([title, city, address])
 
   @@index([isPublished])
-
   @@index([createdAt])
 
   @@map("residential_complexes")
 }
+
 
 model Apartment {
   id           Int       @id @default(autoincrement())
@@ -145,7 +150,6 @@ model Favourite {
   @@map("favourites")
 }
 
-
 model Booking {
   id          Int       @id @default(autoincrement())
 
@@ -166,7 +170,6 @@ model Booking {
 
   @@map("bookings")
 }
-
 
 model File {
   id          Int      @id @default(autoincrement())

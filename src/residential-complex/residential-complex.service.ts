@@ -88,14 +88,11 @@ export class ResidentialComplexService {
   async findAll(
     query: FindAllResidentialComplexesDto,
   ): Promise<ServiceDataResponse<PaginatedResult<ResidentialComplexListItem>>> {
-    this.logger.log('Residential complexes list request started.');
+    const { page = 1, limit = 20, search, isPublished } = query;
 
-    const {
-      page = 1,
-      limit = 20,
-      search,
-      isPublished
-    } = query;
+    this.logger.log(
+      `Residential complexes list request started (page=${page}, limit=${limit}, isPublished=${isPublished ?? 'any'})`,
+    );
 
     const skip = (page - 1) * limit;
 
@@ -135,7 +132,7 @@ export class ResidentialComplexService {
     }));
 
     this.logger.log(
-      `Residential complexes list retrieved: items=${formattedResidentialComplexes.length}, total=${total}, page=${page}.`,
+      `Residential complexes retrieved successfully (items=${formattedResidentialComplexes.length}, total=${total}, page=${page})`,
     );
 
     return {

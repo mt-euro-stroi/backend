@@ -111,62 +111,66 @@ Authorization: Bearer <access_token>
 
 ## 👤 Auth
 
-| Метод | Endpoint | Описание | Auth |
-|-------|----------|---------|------|
-| POST | `/auth/sign-up` | Регистрация | ❌ |
-| POST | `/auth/sign-in` | Вход в систему | ❌ |
-| POST | `/auth/verify-email` | Верификация email | ❌ |
-| POST | `/auth/resend-verification-code` | Переправить код | ❌ |
-| PATCH | `/auth/change-password` | Изменить пароль | ✅ |
+| Метод | Endpoint                         | Описание          | Auth |
+| ----- | -------------------------------- | ----------------- | ---- |
+| POST  | `/auth/sign-up`                  | Регистрация       | ❌   |
+| POST  | `/auth/sign-in`                  | Вход в систему    | ❌   |
+| POST  | `/auth/verify-email`             | Верификация email | ❌   |
+| POST  | `/auth/resend-verification-code` | Переправить код   | ❌   |
+| PATCH | `/auth/change-password`          | Изменить пароль   | ✅   |
 
 ---
 
 ## 👥 Users
 
-| Метод | Endpoint | Описание | Auth | Роль |
-|-------|----------|---------|------|------|
-| GET | `/users` | Получить всех пользователей | ✅ | Admin |
-| GET | `/users/me` | Получить профиль текущего пользователя | ✅ | Any |
-| GET | `/users/:id` | Получить пользователя по ID | ✅ | Admin |
-| PATCH | `/users/me` | Обновить профиль | ✅ | Any |
-| DELETE | `/users/me` | Удалить аккаунт | ✅ | Any |
+| Метод  | Endpoint     | Описание                               | Auth | Роль  |
+| ------ | ------------ | -------------------------------------- | ---- | ----- |
+| GET    | `/users`     | Получить всех пользователей            | ✅   | Admin |
+| GET    | `/users/me`  | Получить профиль текущего пользователя | ✅   | Any   |
+| GET    | `/users/:id` | Получить пользователя по ID            | ✅   | Admin |
+| PATCH  | `/users/me`  | Обновить профиль                       | ✅   | Any   |
+| DELETE | `/users/me`  | Удалить аккаунт                        | ✅   | Any   |
 
 ---
 
 ## 🏢 Residential Complex
 
-| Метод | Endpoint | Описание | Auth | Параметр |
-|-------|----------|---------|------|----------|
-| POST | `/residential-complex` | Создать жилой комплекс | ✅ | - |
-| GET | `/residential-complex` | Получить все жилые комплексы | ❌ | `page`, `limit`, `search`, `isPublished` |
-| GET | `/residential-complex/:identifier` | Получить комплекс | ❌ | `id` или `slug` * |
-| PATCH | `/residential-complex/:slug` | Обновить комплекс | ✅ | `slug` |
-| DELETE | `/residential-complex/:id` | Удалить комплекс | ✅ | `id` |
+| Метод  | Endpoint                           | Описание                     | Auth | Параметр                                 |
+| ------ | ---------------------------------- | ---------------------------- | ---- | ---------------------------------------- |
+| POST   | `/residential-complex`             | Создать жилой комплекс       | ✅   | -                                        |
+| GET    | `/residential-complex`             | Получить все жилые комплексы | ❌   | `page`, `limit`, `search`, `isPublished` |
+| GET    | `/residential-complex/:identifier` | Получить комплекс            | ❌   | `id` или `slug` \*                       |
+| PATCH  | `/residential-complex/:slug`       | Обновить комплекс            | ✅   | `slug`                                   |
+| DELETE | `/residential-complex/:id`         | Удалить комплекс             | ✅   | `id`                                     |
 
-*️⃣ `:identifier` - может быть как числовой ID, так и slug
+\*️⃣ `:identifier` - может быть как числовой ID, так и slug
 
 ---
 
 ## 🏠 Apartments
 
-| Метод | Endpoint | Описание | Auth | Параметр |
-|-------|----------|---------|------|----------|
-| POST | `/apartment` | Создать квартиру | ✅ | - |
-| GET | `/apartment` | Получить все квартиры | ❌ | `page`, `limit`, `status`, `rooms`, `floor`, `minPrice`, `maxPrice`, `isPublished`|
-| GET | `/apartment/:id` | Получить квартиру по ID | ❌ | `id` |
-| PATCH | `/apartment/:id` | Обновить квартиру | ✅ | `id` |
-| DELETE | `/apartment/:id` | Удалить квартиру | ✅ | `id` |
+| Метод  | Endpoint         | Описание                | Auth | Параметр                                                                           |
+| ------ | ---------------- | ----------------------- | ---- | ---------------------------------------------------------------------------------- |
+| POST   | `/apartment`     | Создать квартиру        | ✅   | -                                                                                  |
+| GET    | `/apartment`     | Получить все квартиры   | ❌   | `page`, `limit`, `status`, `rooms`, `floor`, `minPrice`, `maxPrice`, `isPublished` |
+| GET    | `/apartment/:id` | Получить квартиру по ID | ❌   | `id`                                                                               |
+| PATCH  | `/apartment/:id` | Обновить квартиру       | ✅   | `id`                                                                               |
+| DELETE | `/apartment/:id` | Удалить квартиру        | ✅   | `id`                                                                               |
 
 ---
 
 ## ❤️ Favourites
+
 ### 🚧 Work In Progress (WIP)
+
 Эндпоинты могут быть изменены или временно недоступны.
 
 ---
 
 ## 📅 Bookings
+
 ### 🚧 Work In Progress (WIP)
+
 Эндпоинты могут быть изменены или временно недоступны.
 
 ---

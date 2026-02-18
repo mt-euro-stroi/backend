@@ -7,7 +7,6 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
-import { MailService } from './mail/mail.service';
 import { ResidentialComplexModule } from './residential-complex/residential-complex.module';
 import { ApartmentModule } from './apartment/apartment.module';
 import { FavouritesModule } from './favourites/favourites.module';
@@ -29,6 +28,6 @@ import { BookingsModule } from './bookings/bookings.module';
     BookingsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MailService],
+  providers: [AppService],
 })
 export class AppModule {}

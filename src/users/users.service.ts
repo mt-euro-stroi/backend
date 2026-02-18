@@ -35,12 +35,7 @@ export class UsersService {
   ): Promise<ServiceDataResponse<PaginatedResult<UserListItem>>> {
     this.logger.log('Users list request started.');
 
-    const {
-      page = 1,
-      limit = 20,
-      search,
-      isActive
-    } = query;
+    const { page = 1, limit = 20, search, isActive } = query;
 
     const skip = (page - 1) * limit;
 

@@ -1,10 +1,20 @@
 import 'dotenv/config';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from 'src/generated/prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly logger = new Logger(PrismaService.name);
+
   constructor() {
     const adapter = new PrismaMariaDb({
       host: process.env.DATABASE_HOST,
@@ -16,5 +26,22 @@ export class PrismaService extends PrismaClient {
     });
 
     super({ adapter });
+
+    this.logger.log('PrismaService initialized');
+  }
+
+  async onModuleInit() {
+    try {
+      await this.$connect();
+      this.logger.log('Database connection established successfully');
+    } catch (error) {
+      this.logger.error('Failed to connect to database', error.stack);
+      throw error;
+    }
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
+    this.logger.log('Database connection closed');
   }
 }

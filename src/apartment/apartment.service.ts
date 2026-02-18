@@ -63,7 +63,7 @@ export class ApartmentService {
         slug: true,
         city: true,
         address: true,
-        priceFrom: true
+        priceFrom: true,
       },
     });
 
@@ -89,7 +89,10 @@ export class ApartmentService {
         );
       }
 
-      if (complex.priceFrom === null || apartmentData.price < complex.priceFrom) {
+      if (
+        complex.priceFrom === null ||
+        apartmentData.price < complex.priceFrom
+      ) {
         await tx.residentialComplex.update({
           where: { id: complex.id },
           data: { priceFrom: apartmentData.price },
@@ -141,6 +144,10 @@ export class ApartmentService {
       isPublished,
     } = query;
 
+    this.logger.log(
+      `Apartments list request started (page=${page}, limit=${limit})`,
+    );
+
     const skip = (page - 1) * limit;
 
     const priceFilter =
@@ -159,11 +166,8 @@ export class ApartmentService {
       ...(floor !== undefined && { floor }),
       ...(isPublished !== undefined && { isPublished }),
       ...priceFilter,
-
       ...(search?.trim() && {
-        OR: [
-          { description: { search } },
-        ],
+        OR: [{ description: { search } }],
       }),
     };
 
@@ -179,6 +183,10 @@ export class ApartmentService {
     ]);
 
     const formatted = apartments.map((item) => this.mapApartment(item));
+
+    this.logger.log(
+      `Apartments retrieved successfully (items=${formatted.length}, total=${total}, page=${page})`,
+    );
 
     return {
       message: 'Apartments retrieved successfully.',

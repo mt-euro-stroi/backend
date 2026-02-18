@@ -20,7 +20,7 @@ import { RoleGuard } from 'src/common/guards/role.guard';
 import { FilesUploadInterceptor } from 'src/common/interceptors/files-upload.interceptor';
 import { FileCleanupInterceptor } from 'src/common/interceptors/file-cleanup.interceptor';
 import { RequiredFilesPipe } from 'src/common/pipe/required-files.pipe';
-import { FindAllResidentialComplexesDto } from 'src/residential-complex/dto/find-all-residential-complexes.dto';
+import { FindAllApartmentsDto } from './dto/find-all-apartments.dto';
 
 @Controller('apartment')
 export class ApartmentController {
@@ -43,7 +43,7 @@ export class ApartmentController {
   }
 
   @Get()
-  async findAll(@Query() query: FindAllResidentialComplexesDto) {
+  async findAll(@Query() query: FindAllApartmentsDto) {
     return await this.apartmentService.findAll(query);
   }
 

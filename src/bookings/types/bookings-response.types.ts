@@ -14,14 +14,25 @@ export interface BookingApartmentCard {
   files: File[];
 }
 
-export interface BookingListItem {
+export interface BookingBase {
   id: number;
   status: BookingStatus;
   createdAt: Date;
   apartment: BookingApartmentCard;
 }
 
-export interface BookingResponse extends BookingListItem {
+export interface BookingResponse extends BookingBase {
   userId: number;
   apartmentId: number;
+}
+
+export interface BookingAdminResponse extends BookingBase {
+  userId: number;
+  apartmentId: number;
+  user: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
 }

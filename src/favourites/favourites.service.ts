@@ -17,6 +17,7 @@ import {
   FavouriteResponse,
 } from './types/favourites-response.types';
 import { FindAllFavouritesDto } from './dto/find-all-favourites.dto';
+import { mapFavouriteApartment } from './mappers/favourite.mapper';
 
 @Injectable()
 export class FavouritesService {
@@ -25,11 +26,11 @@ export class FavouritesService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(
-    createFavouriteDto: CreateFavouriteDto,
+    dto: CreateFavouriteDto,
     authUser: AuthUser,
   ): Promise<ServiceDataResponse<FavouriteResponse>> {
     const userId = authUser.sub;
-    const { apartmentId } = createFavouriteDto;
+    const { apartmentId } = dto;
 
     this.logger.log(
       `Favourite creation attempt (userId=${userId}, apartmentId=${apartmentId})`,
@@ -94,10 +95,7 @@ export class FavouritesService {
       userId: favourite.userId,
       apartmentId: favourite.apartmentId,
       createdAt: favourite.createdAt,
-      apartment: {
-        ...favourite.apartment,
-        area: Number(favourite.apartment.area),
-      },
+      apartment: mapFavouriteApartment(favourite.apartment),
     };
 
     return {
@@ -107,8 +105,8 @@ export class FavouritesService {
   }
 
   async findAll(
-    authUser: AuthUser,
     query: FindAllFavouritesDto,
+    authUser: AuthUser,
   ): Promise<ServiceDataResponse<PaginatedResult<FavouriteListItem>>> {
     const { page = 1, limit = 20 } = query;
     const userId = authUser.sub;
@@ -141,10 +139,7 @@ export class FavouritesService {
     const formatted = favourites.map((item) => ({
       id: item.id,
       createdAt: item.createdAt,
-      apartment: {
-        ...item.apartment,
-        area: Number(item.apartment.area),
-      },
+      apartment: mapFavouriteApartment(item.apartment),
     }));
 
     this.logger.log(

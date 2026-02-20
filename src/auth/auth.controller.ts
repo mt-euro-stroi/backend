@@ -14,35 +14,35 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('sign-up')
-  async signUp(@Body() signUpDto: SignUpDto) {
-    return await this.authService.signUp(signUpDto);
+  async signUp(@Body() dto: SignUpDto) {
+    return await this.authService.signUp(dto);
   }
 
   @Post('sign-in')
-  async signIn(@Body() signInDto: SignInDto) {
-    return await this.authService.signIn(signInDto);
+  async signIn(@Body() dto: SignInDto) {
+    return await this.authService.signIn(dto);
   }
 
   @Post('verify-email')
-  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
-    return await this.authService.verifyEmail(verifyEmailDto);
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return await this.authService.verifyEmail(dto);
   }
 
   @Post('resend-verification-code')
   async resendVerificationCode(
-    @Body() resendVerificationCodeDto: ResendVerificationCodeDto,
+    @Body() dto: ResendVerificationCodeDto,
   ) {
     return await this.authService.resendVerificationCode(
-      resendVerificationCodeDto,
+      dto,
     );
   }
 
   @Patch('change-password')
   @UseGuards(AuthGuard)
   async changePassword(
+    @Body() dto: ChangePasswordDto,
     @CurrentUser() user: AuthUser,
-    @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    return await this.authService.changePassword(changePasswordDto, user);
+    return await this.authService.changePassword(dto, user);
   }
 }

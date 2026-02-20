@@ -46,10 +46,10 @@ export class AuthService {
     });
   }
 
-  async signUp(signUpDto: SignUpDto): Promise<ServiceMessageResponse> {
+  async signUp(dto: SignUpDto): Promise<ServiceMessageResponse> {
     this.logger.log('Sign up attempt started.');
 
-    const { phone, email, password } = signUpDto;
+    const { phone, email, password } = dto;
 
     const byPhone = await this.prismaService.user.findUnique({
       where: { phone },
@@ -57,7 +57,9 @@ export class AuthService {
 
     if (byPhone) {
       this.logger.warn('Sign up conflict: phone already exists.');
-      throw new ConflictException('User with this phone already exists.');
+      throw new ConflictException(
+        'User with this email or phone already exists.',
+      );
     }
 
     const byEmail = await this.prismaService.user.findUnique({
@@ -66,7 +68,9 @@ export class AuthService {
 
     if (byEmail) {
       this.logger.warn('Sign up conflict: email already exists.');
-      throw new ConflictException('User with this email already exists.');
+      throw new ConflictException(
+        'User with this email or phone already exists.',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -74,7 +78,7 @@ export class AuthService {
 
     const user = await this.prismaService.user.create({
       data: {
-        ...signUpDto,
+        ...dto,
         verificationCode,
         password: hashedPassword,
       },
@@ -91,11 +95,11 @@ export class AuthService {
   }
 
   async signIn(
-    signInDto: SignInDto,
+    dto: SignInDto,
   ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
     this.logger.log('Sign in attempt for email.');
 
-    const { email, password } = signInDto;
+    const { email, password } = dto;
 
     const user = await this.prismaService.user.findUnique({
       where: { email },
@@ -110,7 +114,9 @@ export class AuthService {
       this.logger.warn(
         `Sign in blocked: inactive account (userId=${user.id}).`,
       );
-      throw new UnauthorizedException('Invalid email or password.');
+      throw new UnauthorizedException(
+        'Your account has been deactivated. Please contact support.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -146,11 +152,11 @@ export class AuthService {
   }
 
   async verifyEmail(
-    verifyEmailDto: VerifyEmailDto,
+    dto: VerifyEmailDto,
   ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
     this.logger.log('Email verification attempt started.');
 
-    const { email, verificationCode } = verifyEmailDto;
+    const { email, verificationCode } = dto;
 
     const user = await this.prismaService.user.findUnique({
       where: { email },
@@ -199,11 +205,11 @@ export class AuthService {
   }
 
   async resendVerificationCode(
-    resendVerificationCodeDto: ResendVerificationCodeDto,
+    dto: ResendVerificationCodeDto,
   ): Promise<ServiceMessageResponse> {
     this.logger.log('Resend verification code attempt started.');
 
-    const { email } = resendVerificationCodeDto;
+    const { email } = dto;
 
     const user = await this.prismaService.user.findUnique({
       where: { email },
@@ -243,14 +249,14 @@ export class AuthService {
   }
 
   async changePassword(
-    changePasswordDto: ChangePasswordDto,
+    dto: ChangePasswordDto,
     authUser: AuthUser,
   ): Promise<ServiceMessageResponse> {
     const userId = authUser.sub;
 
     this.logger.log(`Password change attempt started (userId=${userId}).`);
 
-    const { currentPassword, newPassword } = changePasswordDto;
+    const { currentPassword, newPassword } = dto;
 
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },

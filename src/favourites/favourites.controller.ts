@@ -23,10 +23,10 @@ export class FavouritesController {
   @Post()
   @UseGuards(AuthGuard)
   async create(
-    @Body() createFavouriteDto: CreateFavouriteDto,
+    @Body() dto: CreateFavouriteDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.favouritesService.create(createFavouriteDto, user);
+    return this.favouritesService.create(dto, user);
   }
 
   @Get()
@@ -35,7 +35,7 @@ export class FavouritesController {
     @Query() query: FindAllFavouritesDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.favouritesService.findAll(user, query);
+    return this.favouritesService.findAll(query, user);
   }
 
   @Delete(':id')

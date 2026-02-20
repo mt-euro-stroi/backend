@@ -7,8 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
-import { ResidentialComplexModule } from './residential-complex/residential-complex.module';
-import { ApartmentModule } from './apartment/apartment.module';
+import { ComplexModule } from './complexes/complexes.module';
+import { ApartmentModule } from './apartments/apartments.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { BookingsModule } from './bookings/bookings.module';
 
@@ -22,7 +22,7 @@ import { BookingsModule } from './bookings/bookings.module';
       serveRoot: '/uploads',
     }),
     MailModule,
-    ResidentialComplexModule,
+    ComplexModule,
     ApartmentModule,
     FavouritesModule,
     BookingsModule,

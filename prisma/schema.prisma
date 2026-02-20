@@ -58,7 +58,7 @@ model User {
   @@map("users")
 }
 
-model ResidentialComplex {
+model Complex {
   id              Int       @id @default(autoincrement())
 
   title           String    @db.VarChar(255)
@@ -88,7 +88,7 @@ model ResidentialComplex {
   @@index([isPublished])
   @@index([createdAt])
 
-  @@map("residential_complexes")
+  @@map("complexes")
 }
 
 
@@ -96,7 +96,7 @@ model Apartment {
   id           Int       @id @default(autoincrement())
 
   complexId    Int
-  complex      ResidentialComplex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  complex      Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
 
   entrance     Int
   number       Int
@@ -175,15 +175,15 @@ model File {
   id          Int      @id @default(autoincrement())
   path        String
 
-  residentialComplexId Int?
+  complexId Int?
   apartmentId          Int?
 
-  residentialComplex   ResidentialComplex? @relation(fields: [residentialComplexId], references: [id], onDelete: Cascade)
+  complex   Complex? @relation(fields: [complexId], references: [id], onDelete: Cascade)
   apartment            Apartment?          @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@index([residentialComplexId])
+  @@index([complexId])
   @@index([apartmentId])
   @@map("files")
 }

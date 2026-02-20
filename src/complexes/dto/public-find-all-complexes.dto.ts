@@ -1,15 +1,7 @@
-import {
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
-export class FindAllUsersDto {
+export class PublicFindAllComplexesDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -28,9 +20,4 @@ export class FindAllUsersDto {
   @Transform(({ value }) => value?.trim())
   @MaxLength(100)
   search?: string;
-
-  @IsOptional()
-  @Transform(({ value }) => value === 'true')
-  @IsBoolean()
-  isActive?: boolean;
 }

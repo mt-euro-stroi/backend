@@ -15,22 +15,34 @@ import { AuthGuard } from 'src/common/guards/auth.guard';
 import { CurrentUser } from 'src/common/decorators/auth-user.decorator';
 import type { AuthUser } from 'src/common/types/auth-user.type';
 import { FindAllFavouritesDto } from './dto/find-all-favourites.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 
+@ApiTags('Favourites')
+@ApiBearerAuth('bearer')
 @Controller('favourites')
 export class FavouritesController {
   constructor(private readonly favouritesService: FavouritesService) {}
 
   @Post()
   @UseGuards(AuthGuard)
-  async create(
-    @Body() dto: CreateFavouriteDto,
-    @CurrentUser() user: AuthUser,
-  ) {
+  @ApiOperation({ summary: 'Добавить в избранное' })
+  @ApiBody({ type: CreateFavouriteDto })
+  @ApiResponse({ status: 201, description: 'Квартира добавлена в избранное' })
+  async create(@Body() dto: CreateFavouriteDto, @CurrentUser() user: AuthUser) {
     return this.favouritesService.create(dto, user);
   }
 
   @Get()
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Список избранных квартир' })
+  @ApiResponse({ status: 200, description: 'Список избранных' })
   async findAll(
     @Query() query: FindAllFavouritesDto,
     @CurrentUser() user: AuthUser,
@@ -40,6 +52,9 @@ export class FavouritesController {
 
   @Delete(':id')
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Удалить из избранного' })
+  @ApiParam({ name: 'id', type: 'number', description: 'ID избранного' })
+  @ApiResponse({ status: 200, description: 'Удалено из избранного' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthUser,

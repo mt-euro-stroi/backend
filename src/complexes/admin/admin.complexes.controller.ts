@@ -22,7 +22,18 @@ import { RequiredFilesPipe } from 'src/common/pipe/required-files.pipe';
 import { FileCleanupInterceptor } from 'src/common/interceptors/file-cleanup.interceptor';
 import { AdminFindAllComplexesDto } from '../dto/admin-find-all-complexes.dto';
 import { UpdateComplexStatusDto } from '../dto/update-complex-status.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 
+@ApiTags('Complexes')
+@ApiBearerAuth('bearer')
 @Controller('admin/complexes')
 @UseGuards(AuthGuard, AdminGuard)
 export class AdminComplexController {
@@ -33,6 +44,9 @@ export class AdminComplexController {
     FilesUploadInterceptor('./uploads/complexes'),
     FileCleanupInterceptor,
   )
+  @ApiOperation({ summary: 'Админ: создать комплекс' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 201, description: 'Комплекс создан' })
   async create(
     @Body() dto: CreateComplexDto,
     @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
@@ -44,11 +58,22 @@ export class AdminComplexController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Админ: список комплексов' })
+  @ApiResponse({ status: 200, description: 'Список комплексов' })
   async findAll(@Query() query: AdminFindAllComplexesDto) {
     return await this.adminComplexService.findAll(query);
   }
 
   @Get(':identifier')
+  @ApiOperation({
+    summary: 'Админ: получить комплекс по идентификатору или slug',
+  })
+  @ApiParam({
+    name: 'identifier',
+    type: 'string',
+    description: 'ID или slug комплекса',
+  })
+  @ApiResponse({ status: 200, description: 'Детали комплекса' })
   async findOneBySlug(@Param('identifier') identifier: string) {
     return await this.adminComplexService.findOne(identifier);
   }
@@ -58,6 +83,10 @@ export class AdminComplexController {
     FilesUploadInterceptor('./uploads/complexes'),
     FileCleanupInterceptor,
   )
+  @ApiOperation({ summary: 'Админ: обновить комплекс' })
+  @ApiConsumes('multipart/form-data')
+  @ApiParam({ name: 'id', type: 'number', description: 'ID комплекса' })
+  @ApiResponse({ status: 200, description: 'Комплекс обновлен' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateComplexDto,
@@ -71,17 +100,21 @@ export class AdminComplexController {
   }
 
   @Patch(':id/status')
+  @ApiOperation({ summary: 'Админ: обновить статус публикации' })
+  @ApiParam({ name: 'id', type: 'number', description: 'ID комплекса' })
+  @ApiBody({ type: UpdateComplexStatusDto })
+  @ApiResponse({ status: 200, description: 'Статус обновлен' })
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateComplexStatusDto,
   ) {
-    return await this.adminComplexService.updateStatus(
-      id,
-      dto,
-    );
+    return await this.adminComplexService.updateStatus(id, dto);
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Админ: удалить комплекс' })
+  @ApiParam({ name: 'id', type: 'number', description: 'ID комплекса' })
+  @ApiResponse({ status: 200, description: 'Комплекс удален' })
   async remove(@Param('id', ParseIntPipe) id: number) {
     return await this.adminComplexService.remove(id);
   }

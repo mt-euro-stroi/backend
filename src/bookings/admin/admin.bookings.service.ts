@@ -11,9 +11,7 @@ import {
   ServiceDataResponse,
   ServiceMessageResponse,
 } from 'src/common/types/service-response.types';
-import {
-  BookingAdminResponse,
-} from '../types/bookings-response.types';
+import { BookingAdminResponse } from '../types/bookings-response.types';
 import { ApartmentStatus, BookingStatus } from 'src/generated/prisma/enums';
 import { UpdateBookingStatusDto } from '../dto/update-booking-status.dto';
 import { bookingApartmentInclude } from '../prisma/booking.include';
@@ -131,19 +129,16 @@ export class AdminBookingsService {
     }
 
     if (status === BookingStatus.CONFIRMED) {
-      const existingConfirmed =
-        await this.prismaService.booking.findFirst({
-          where: {
-            apartmentId: booking.apartmentId,
-            status: BookingStatus.CONFIRMED,
-            NOT: { id },
-          },
-        });
+      const existingConfirmed = await this.prismaService.booking.findFirst({
+        where: {
+          apartmentId: booking.apartmentId,
+          status: BookingStatus.CONFIRMED,
+          NOT: { id },
+        },
+      });
 
       if (existingConfirmed) {
-        throw new ConflictException(
-          'Apartment already has confirmed booking',
-        );
+        throw new ConflictException('Apartment already has confirmed booking');
       }
     }
 

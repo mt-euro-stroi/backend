@@ -11,10 +11,7 @@ import {
   ServiceDataResponse,
   ServiceMessageResponse,
 } from 'src/common/types/service-response.types';
-import {
-  BookingBase,
-  BookingResponse,
-} from '../types/bookings-response.types';
+import { BookingBase, BookingResponse } from '../types/bookings-response.types';
 import { ApartmentStatus, BookingStatus } from 'src/generated/prisma/enums';
 import { bookingApartmentInclude } from '../prisma/booking.include';
 import { mapBookingApartment } from '../mappers/booking.mapper';

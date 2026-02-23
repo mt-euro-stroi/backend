@@ -1,25 +1,12 @@
 import { Transform } from 'class-transformer';
 import {
-  IsEmail,
-  IsNotEmpty,
-  IsString,
+  Length,
   Matches,
-  MaxLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { EmailDto } from './base/email.dto';
 
-export class VerifyEmailDto {
-  @ApiProperty({
-    example: 'ivan.petrov@example.com',
-    description: 'Адрес электронной почты',
-    format: 'email',
-  })
-  @Transform(({ value }) => value?.trim())
-  @IsEmail()
-  @IsNotEmpty()
-  @MaxLength(255)
-  email: string;
-
+export class VerifyEmailDto extends EmailDto {
   @ApiProperty({
     example: '123456',
     description: 'Код подтверждения из email (6 цифр)',
@@ -28,7 +15,7 @@ export class VerifyEmailDto {
     maxLength: 6,
   })
   @Transform(({ value }) => value?.trim())
-  @IsString()
-  @Matches(/^\d{6}$/, { message: 'Verification code must be exactly 6 digits' })
+  @Length(6, 6)
+  @Matches(/^\d+$/, { message: 'Verification code must be exactly 6 digits' })
   verificationCode: string;
 }

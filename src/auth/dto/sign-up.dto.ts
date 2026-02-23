@@ -1,14 +1,15 @@
 import {
-  IsEmail,
   IsString,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, IntersectionType } from '@nestjs/swagger';
+import { EmailDto } from './base/email.dto';
+import { PasswordDto } from './base/password.dto';
 
-export class SignUpDto {
+export class SignUpDto extends IntersectionType(EmailDto, PasswordDto) {
   @ApiProperty({
     example: 'Иван',
     description: 'Имя пользователя',
@@ -44,29 +45,4 @@ export class SignUpDto {
     message: 'Phone must be in format +7XXXXXXXXXX',
   })
   phone: string;
-
-  @ApiProperty({
-    example: 'ivan.petrov@example.com',
-    description: 'Адрес электронной почты',
-    format: 'email',
-  })
-  @Transform(({ value }) => value?.trim())
-  @IsEmail()
-  @MaxLength(255)
-  email: string;
-
-  @ApiProperty({
-    example: 'SecurePassword123',
-    description: 'Пароль (минимум 8 символов, без пробелов)',
-    minLength: 8,
-    maxLength: 255,
-  })
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @MinLength(8)
-  @MaxLength(255)
-  @Matches(/^\S+$/, {
-    message: 'Password must not contain spaces',
-  })
-  password: string;
 }

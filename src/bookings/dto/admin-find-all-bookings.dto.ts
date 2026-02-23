@@ -1,35 +1,10 @@
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BookingStatus } from 'src/generated/prisma/enums';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, } from '@nestjs/swagger';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
-export class AdminFindAllBookingsDto {
-  @ApiProperty({
-    example: 1,
-    description: 'Номер страницы',
-    required: false,
-    minimum: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number;
-
-  @ApiProperty({
-    example: 10,
-    description: 'Лимит на страницу',
-    required: false,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number;
-
+export class AdminFindAllBookingsDto extends PaginationDto {
   @ApiProperty({
     example: 42,
     description: 'ID пользователя для фильтрации (опционально)',

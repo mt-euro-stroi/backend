@@ -1,6 +1,5 @@
 import { Transform } from 'class-transformer';
 import {
-  IsNotEmpty,
   IsString,
   Matches,
   MaxLength,
@@ -17,10 +16,9 @@ export class ChangePasswordDto {
   })
   @Transform(({ value }) => value?.trim())
   @IsString()
-  @IsNotEmpty()
   @MinLength(6)
   @MaxLength(255)
-  @Matches(/^\S+$/, { message: 'Current password must not contain spaces' })
+  @Matches(/^\S+$/, { message: 'New password must not contain spaces' })
   currentPassword: string;
 
   @ApiProperty({
@@ -31,7 +29,6 @@ export class ChangePasswordDto {
   })
   @Transform(({ value }) => value?.trim())
   @IsString()
-  @IsNotEmpty()
   @MinLength(6)
   @MaxLength(255)
   @Matches(/^\S+$/, { message: 'New password must not contain spaces' })

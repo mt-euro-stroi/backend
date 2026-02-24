@@ -26,6 +26,7 @@ export class PublicApartmentService {
       rooms,
       floor,
       status,
+      search,
     } = query;
 
     this.logger.log(
@@ -50,6 +51,9 @@ export class PublicApartmentService {
       ...(rooms !== undefined && { rooms }),
       ...(floor !== undefined && { floor }),
       ...priceFilter,
+      ...(search?.trim() && {
+        OR: [{ description: { search } }],
+      }),
     };
 
     const [apartments, total] = await this.prismaService.$transaction([

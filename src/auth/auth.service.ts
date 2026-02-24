@@ -23,6 +23,8 @@ import { User } from 'src/generated/prisma/client';
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000;
+  private readonly RESEND_COOLDOWN_MS = 60_000;
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -75,12 +77,16 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationCode = generateVerificationCode();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + this.VERIFICATION_CODE_TTL_MS);
 
     const user = await this.prismaService.user.create({
       data: {
         ...dto,
-        verificationCode,
         password: hashedPassword,
+        verificationCode,
+        verificationCodeSentAt: now,
+        verificationCodeExpiresAt: expiresAt,
       },
     });
 
@@ -127,21 +133,35 @@ export class AuthService {
     }
 
     if (!user.isEmailVerified) {
-      this.logger.log(`Unverified email login (userId=${user.id}).`);
+      const now = new Date();
+
+      if (
+        user.verificationCodeSentAt &&
+        now.getTime() - user.verificationCodeSentAt.getTime() <
+          this.RESEND_COOLDOWN_MS
+      ) {
+        throw new ConflictException(
+          'Email is not verified. Please check your email.',
+        );
+      }
 
       const verificationCode = generateVerificationCode();
+      const expiresAt = new Date(now.getTime() + this.VERIFICATION_CODE_TTL_MS);
 
       await this.prismaService.user.update({
         where: { id: user.id },
-        data: { verificationCode },
+        data: {
+          verificationCode,
+          verificationCodeSentAt: now,
+          verificationCodeExpiresAt: expiresAt,
+        },
       });
 
       this.sendVerificationCode(user.email, verificationCode);
 
-      return {
-        message:
-          'Email is not verified. A new verification code has been sent to your email.',
-      };
+      throw new ConflictException(
+        'Email is not verified. A new verification code has been sent.',
+      );
     }
 
     const accessToken = await this.generateAccessToken(user);
@@ -186,11 +206,23 @@ export class AuthService {
       throw new BadRequestException('Invalid verification code.');
     }
 
+    if (
+      !user.verificationCodeExpiresAt ||
+      user.verificationCodeExpiresAt < new Date()
+    ) {
+      this.logger.warn(
+        `Verification failed: code expired by TTL (userId=${user.id}).`,
+      );
+      throw new BadRequestException('Invalid verification code.');
+    }
+
     const updatedUser = await this.prismaService.user.update({
       where: { id: user.id },
       data: {
         isEmailVerified: true,
         verificationCode: null,
+        verificationCodeSentAt: null,
+        verificationCodeExpiresAt: null,
       },
     });
 
@@ -231,11 +263,28 @@ export class AuthService {
       };
     }
 
+    const now = new Date();
+
+    if (
+      user.verificationCodeSentAt &&
+      now.getTime() - user.verificationCodeSentAt.getTime() <
+        this.RESEND_COOLDOWN_MS
+    ) {
+      throw new ConflictException(
+        'Verification code was sent recently. Please wait before requesting a new one.',
+      );
+    }
+
     const verificationCode = generateVerificationCode();
+    const expiresAt = new Date(now.getTime() + this.VERIFICATION_CODE_TTL_MS);
 
     await this.prismaService.user.update({
       where: { id: user.id },
-      data: { verificationCode },
+      data: {
+        verificationCode,
+        verificationCodeSentAt: now,
+        verificationCodeExpiresAt: expiresAt,
+      },
     });
 
     this.sendVerificationCode(user.email, verificationCode);
@@ -258,16 +307,9 @@ export class AuthService {
 
     const { currentPassword, newPassword } = dto;
 
-    const user = await this.prismaService.user.findUnique({
+    const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userId },
     });
-
-    if (!user) {
-      this.logger.warn(
-        `Password change failed: authenticated user missing (userId=${userId}).`,
-      );
-      throw new UnauthorizedException('Please sign in again to continue.');
-    }
 
     const isValid = await bcrypt.compare(currentPassword, user.password);
 

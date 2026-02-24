@@ -224,6 +224,33 @@ export class AdminApartmentService {
 
     const { deletedFileIds = [], ...updateData } = dto;
 
+    const nextEntrance = updateData.entrance ?? apartment.entrance;
+    const nextNumber = updateData.number ?? apartment.number;
+
+    if (
+      nextEntrance !== apartment.entrance ||
+      nextNumber !== apartment.number
+    ) {
+      const existingApartment = await this.prismaService.apartment.findFirst({
+        where: {
+          id: { not: id },
+          complexId: apartment.complexId,
+          entrance: nextEntrance,
+          number: nextNumber,
+        },
+        select: { id: true },
+      });
+
+      if (existingApartment) {
+        this.logger.warn(
+          `Apartment update rejected: duplicate number in complex (id=${id}, complexId=${apartment.complexId}, entrance=${nextEntrance}, number=${nextNumber}).`,
+        );
+        throw new ConflictException(
+          'Apartment with this number already exists in the complex.',
+        );
+      }
+    }
+
     const filesToDelete = deletedFileIds.length
       ? await this.prismaService.file.findMany({
           where: {
@@ -277,6 +304,16 @@ export class AdminApartmentService {
             `New files added to apartment (id=${id}, count=${newFiles.length}).`,
           );
         }
+
+        const minPriceAggregate = await tx.apartment.aggregate({
+          where: { complexId: updated.complexId },
+          _min: { price: true },
+        });
+
+        await tx.complex.update({
+          where: { id: updated.complexId },
+          data: { priceFrom: minPriceAggregate._min.price ?? null },
+        });
 
         return tx.apartment.findFirstOrThrow({
           where: { id: updated.id },

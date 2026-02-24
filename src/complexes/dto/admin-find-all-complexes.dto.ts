@@ -11,14 +11,18 @@ import { PublicFindAllComplexesDto } from './public-find-all-complexes.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AdminFindAllComplexesDto extends PublicFindAllComplexesDto {
-  @IsOptional()
-  @Transform(({ value }) => value === 'true')
-  @IsBoolean()
   @ApiProperty({
     example: true,
     description: 'Фильтр по публикации (админ)',
     required: false,
     type: 'boolean',
   })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
   isPublished?: boolean;
 }

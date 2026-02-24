@@ -1,8 +1,5 @@
 import { Transform } from 'class-transformer';
-import {
-  Length,
-  Matches,
-} from 'class-validator';
+import { Length, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EmailDto } from './base/email.dto';
 
@@ -15,7 +12,6 @@ export class VerifyEmailDto extends EmailDto {
     maxLength: 6,
   })
   @Transform(({ value }) => value?.trim())
-  @Length(6, 6)
   @Matches(/^\d+$/, { message: 'Verification code must be exactly 6 digits' })
   verificationCode: string;
 }

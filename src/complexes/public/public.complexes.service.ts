@@ -32,9 +32,9 @@ export class PublicComplexService {
       isPublished: true,
       ...(search && {
         OR: [
-          { title: { contains: search } },
-          { city: { contains: search } },
-          { address: { contains: search } },
+          { title: { search } },
+          { city: { search } },
+          { address: { search } },
         ],
       }),
     };

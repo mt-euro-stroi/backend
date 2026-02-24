@@ -264,7 +264,7 @@ export class AdminUsersService {
       where: { id },
     });
 
-    this.logger.warn(
+    this.logger.log(
       `Admin user deleted successfully (targetUserId=${id}, adminId=${adminId}).`,
     );
 

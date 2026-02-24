@@ -15,7 +15,6 @@ export const userFullSelect = {
   email: true,
   role: true,
   isActive: true,
-  isPhoneVerified: true,
   isEmailVerified: true,
   createdAt: true,
   updatedAt: true,

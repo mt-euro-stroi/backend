@@ -64,21 +64,4 @@ export class UpdateUserDto {
   @IsEmail()
   @MaxLength(255)
   email?: string;
-
-  @ApiProperty({
-    example: 'SecurePassword123',
-    description: 'Пароль (минимум 6 символов)',
-    required: false,
-    minLength: 6,
-    maxLength: 255,
-  })
-  @IsOptional()
-  @Transform(({ value }) => value?.trim())
-  @IsString()
-  @MinLength(6)
-  @MaxLength(255)
-  @Matches(/^\S+$/, {
-    message: 'Password must not contain spaces',
-  })
-  password?: string;
 }

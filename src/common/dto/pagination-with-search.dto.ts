@@ -1,7 +1,7 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import { IsOptional, IsString, MaxLength } from "class-validator";
-import { PaginationDto } from "./pagination.dto";
+import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { PaginationDto } from './pagination.dto';
 
 export class PaginationWithSearchDto extends PaginationDto {
   @ApiProperty({
@@ -12,7 +12,10 @@ export class PaginationWithSearchDto extends PaginationDto {
   })
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }) => {
+    const trimmed = value?.trim();
+    return trimmed === '' ? undefined : trimmed;
+  })
   @MaxLength(100)
   search?: string;
 }

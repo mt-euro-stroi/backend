@@ -1,7 +1,7 @@
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BookingStatus } from 'src/generated/prisma/enums';
-import { ApiProperty, } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 export class AdminFindAllBookingsDto extends PaginationDto {

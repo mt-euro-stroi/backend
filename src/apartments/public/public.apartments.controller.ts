@@ -14,7 +14,7 @@ export class PublicApartmentController {
   @ApiOperation({ summary: 'Публично: получить список квартир' })
   @ApiResponse({ status: 200, description: 'Список квартир' })
   async findAll(@Query() query: PublicFindAllApartmentsDto) {
-    return await this.publicApartmentService.findAll(query);
+    return this.publicApartmentService.findAll(query);
   }
 
   @Get(':id')
@@ -22,6 +22,6 @@ export class PublicApartmentController {
   @ApiParam({ name: 'id', type: 'number', description: 'ID квартиры' })
   @ApiResponse({ status: 200, description: 'Детали квартиры' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return await this.publicApartmentService.findOne(id);
+    return this.publicApartmentService.findOne(id);
   }
 }

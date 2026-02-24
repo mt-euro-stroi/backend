@@ -1,9 +1,4 @@
-import {
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, IntersectionType } from '@nestjs/swagger';
 import { EmailDto } from './base/email.dto';

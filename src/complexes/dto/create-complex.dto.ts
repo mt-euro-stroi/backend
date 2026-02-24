@@ -36,7 +36,7 @@ export class CreateComplexDto {
   @Transform(({ value }) => value?.trim().toLowerCase())
   @MinLength(3)
   @MaxLength(255)
-  @Matches(/^[a-z0-9-]+$/)
+  @Matches(/^[a-z0-9-]+$/, { message: 'Slug can contain only lowercase letters, numbers and hyphens' })
   slug: string;
 
   @ApiProperty({
@@ -108,7 +108,11 @@ export class CreateComplexDto {
     type: 'boolean',
   })
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   isPublished?: boolean;
 }

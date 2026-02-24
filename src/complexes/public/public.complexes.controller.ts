@@ -12,13 +12,13 @@ export class PublicComplexController {
   @ApiOperation({ summary: 'Список комплексов' })
   @ApiResponse({ status: 200, description: 'Список комплексов' })
   async findAll(@Query() query: PublicFindAllComplexesDto) {
-    return await this.publicComplexService.findAll(query);
+    return this.publicComplexService.findAll(query);
   }
 
   @Get(':slug')
   @ApiOperation({ summary: 'Детали комплекса по slug' })
   @ApiResponse({ status: 200, description: 'Детали комплекса' })
   async findOneBySlug(@Param('slug') slug: string) {
-    return await this.publicComplexService.findOne(slug);
+    return this.publicComplexService.findOne(slug);
   }
 }

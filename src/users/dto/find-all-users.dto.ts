@@ -1,7 +1,4 @@
-import {
-  IsBoolean,
-  IsOptional,
-} from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaginationWithSearchDto } from 'src/common/dto/pagination-with-search.dto';
@@ -14,7 +11,11 @@ export class FindAllUsersDto extends PaginationWithSearchDto {
     type: 'boolean',
   })
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   isActive?: boolean;
 }

@@ -1,29 +1,10 @@
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-} from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApartmentStatus } from 'src/generated/prisma/enums';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaginationWithSearchDto } from 'src/common/dto/pagination-with-search.dto';
 
 export class PublicFindAllApartmentsDto extends PaginationWithSearchDto {
-  @ApiProperty({
-    example: 'euro-complex-1',
-    description: 'Слаг комплекса для фильтрации',
-    required: false,
-    maxLength: 255,
-  })
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value?.trim())
-  @MaxLength(255)
-  complexSlug?: string;
-
   @ApiProperty({
     example: 4000000,
     description: 'Минимальная цена (в рублях)',
@@ -52,12 +33,12 @@ export class PublicFindAllApartmentsDto extends PaginationWithSearchDto {
     example: 2,
     description: 'Количество комнат',
     required: false,
-    minimum: 0,
+    minimum: 1,
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
+  @Min(1)
   rooms?: number;
 
   @ApiProperty({

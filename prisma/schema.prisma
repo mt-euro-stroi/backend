@@ -1,0 +1,187 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ApartmentStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+
+  firstName         String   @db.VarChar(50)
+  lastName          String   @db.VarChar(50)
+
+  phone             String   @db.VarChar(12)
+  email             String   @db.VarChar(255)
+
+  role              Role     @default(USER)
+  isActive          Boolean  @default(true)
+
+  password          String   @db.VarChar(255)
+
+  isEmailVerified   Boolean  @default(false)
+
+  verificationCode          String?   @db.VarChar(6)
+  verificationCodeSentAt    DateTime?
+  verificationCodeExpiresAt DateTime?
+
+  favourites        Favourite[]
+  bookings          Booking[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([phone])
+  @@unique([email])
+
+  @@index([isActive])
+  @@index([createdAt])
+
+  @@map("users")
+}
+
+model Complex {
+  id              Int       @id @default(autoincrement())
+
+  title           String    @db.VarChar(255)
+  slug            String    @db.VarChar(255)
+
+  description     String?   @db.Text
+
+  city            String    @db.VarChar(100)
+  address         String    @db.VarChar(255)
+
+  completionDate  DateTime?
+  priceFrom       Int?
+
+  isPublished     Boolean   @default(false)
+
+  apartments      Apartment[]
+  files           File[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([slug])
+  @@fulltext([title, city, address])
+
+  @@index([isPublished])
+  @@index([createdAt])
+
+  @@map("complexes")
+}
+
+model Apartment {
+  id           Int       @id @default(autoincrement())
+
+  complexId    Int
+  complex      Complex   @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  entrance     Int
+  number       Int
+
+  rooms        Int
+  area         Decimal   @db.Decimal(10,2)
+  floor        Int
+  price        Int
+
+  status       ApartmentStatus @default(AVAILABLE)
+  isPublished  Boolean         @default(false)
+
+  description  String?   @db.Text
+
+  files        File[]
+
+  favourites   Favourite[]
+  bookings     Booking[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([complexId, entrance, number])
+
+  @@index([complexId, isPublished, createdAt])
+  @@index([price])
+  @@index([floor])
+
+  @@fulltext([description])
+
+  @@map("apartments")
+}
+
+model Favourite {
+  id          Int       @id @default(autoincrement())
+
+  userId      Int
+  apartmentId Int
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, apartmentId])
+  @@index([userId])
+  @@index([apartmentId])
+
+  @@map("favourites")
+}
+
+model Booking {
+  id          Int       @id @default(autoincrement())
+
+  userId      Int
+  apartmentId Int
+
+  status      BookingStatus @default(PENDING)
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, apartmentId])
+  @@index([userId])
+  @@index([apartmentId])
+  @@index([apartmentId, status])
+
+  @@map("bookings")
+}
+
+model File {
+  id          Int      @id @default(autoincrement())
+  path        String
+
+  complexId   Int?
+  apartmentId Int?
+
+  complex     Complex?   @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  apartment   Apartment? @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([complexId])
+  @@index([apartmentId])
+
+  @@map("files")
+}

@@ -68,7 +68,7 @@ export class AdminApartmentController {
     @Body() dto: CreateApartmentDto,
     @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
   ) {
-    return await this.adminApartmentService.create(
+    return this.adminApartmentService.create(
       dto,
       files.map((item) => item.filename),
     );
@@ -90,7 +90,7 @@ export class AdminApartmentController {
     description: 'Недостаточно прав (требуется admin)',
   })
   async findAll(@Query() query: AdminFindAllApartmentsDto) {
-    return await this.adminApartmentService.findAll(query);
+    return this.adminApartmentService.findAll(query);
   }
 
   @Get(':id')
@@ -117,7 +117,7 @@ export class AdminApartmentController {
     description: 'Недостаточно прав (требуется admin)',
   })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return await this.adminApartmentService.findOne(id);
+    return this.adminApartmentService.findOne(id);
   }
 
   @Patch(':id')
@@ -153,7 +153,7 @@ export class AdminApartmentController {
     @Body() dto: UpdateApartmentDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return await this.adminApartmentService.update(
+    return this.adminApartmentService.update(
       id,
       dto,
       files?.map((item) => item.filename) ?? [],
@@ -187,7 +187,7 @@ export class AdminApartmentController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateApartmentStatusDto,
   ) {
-    return await this.adminApartmentService.updateStatus(id, dto);
+    return this.adminApartmentService.updateStatus(id, dto);
   }
 
   @Delete(':id')
@@ -214,6 +214,6 @@ export class AdminApartmentController {
     description: 'Недостаточно прав (требуется admin)',
   })
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return await this.adminApartmentService.remove(id);
+    return this.adminApartmentService.remove(id);
   }
 }

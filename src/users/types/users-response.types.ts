@@ -1,18 +1,10 @@
-import { Role } from 'src/generated/prisma/enums';
+import { Prisma } from 'src/generated/prisma/client';
+import { userFullSelect, userListSelect } from '../prisma/user.select';
 
-export interface UserListItem {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: Role;
-  isActive: boolean;
-}
+export type UserResponse = Prisma.UserGetPayload<{
+  select: typeof userFullSelect;
+}>;
 
-export interface UserResponse extends UserListItem {
-  phone: string;
-  isPhoneVerified: boolean;
-  isEmailVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type UserListItem = Prisma.UserGetPayload<{
+  select: typeof userListSelect;
+}>;

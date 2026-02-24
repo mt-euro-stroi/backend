@@ -74,12 +74,12 @@ export class CreateApartmentDto {
   @ApiProperty({
     example: 3,
     description: 'Этаж',
-    minimum: 0,
+    minimum: 1,
     maximum: 200,
   })
   @Type(() => Number)
   @IsInt()
-  @Min(0)
+  @Min(1)
   @Max(200)
   floor: number;
 
@@ -124,7 +124,11 @@ export class CreateApartmentDto {
     type: 'boolean',
   })
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   isPublished?: boolean;
 }

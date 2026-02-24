@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -26,17 +27,10 @@ export class PublicUsersService {
 
     this.logger.log(`User profile request started (userId=${userId}).`);
 
-    const user = await this.prismaService.user.findUnique({
+    const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userId },
       select: userFullSelect,
     });
-
-    if (!user) {
-      this.logger.warn(
-        `User not found for authenticated session (userId=${userId}).`,
-      );
-      throw new NotFoundException('User not found.');
-    }
 
     this.logger.log(`User profile retrieved successfully (userId=${userId}).`);
 
@@ -54,18 +48,46 @@ export class PublicUsersService {
 
     this.logger.log(`User update request started (userId=${userId}).`);
 
-    const user = await this.prismaService.user.findUnique({
+    const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userId },
     });
 
-    if (!user) {
-      this.logger.warn(`User update failed: not found (userId=${userId}).`);
-      throw new NotFoundException('User not found.');
+    let resetEmailVerified = false;
+
+    if (dto.email && dto.email !== user.email) {
+      const existingEmail = await this.prismaService.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingEmail) {
+        this.logger.warn(
+          `User update failed: email already exists (userId=${userId}).`,
+        );
+        throw new ConflictException('Email already in use.');
+      }
+
+      resetEmailVerified = true;
+    }
+
+    if (dto.phone && dto.phone !== user.phone) {
+      const existingPhone = await this.prismaService.user.findUnique({
+        where: { phone: dto.phone },
+      });
+
+      if (existingPhone) {
+        this.logger.warn(
+          `User update failed: phone already exists (userId=${userId}).`,
+        );
+        throw new ConflictException('Phone already in use.');
+      }
     }
 
     const updatedUser = await this.prismaService.user.update({
       where: { id: userId },
-      data: { ...dto },
+      data: {
+        ...dto,
+        ...(resetEmailVerified && { isEmailVerified: false }),
+      },
       select: userFullSelect,
     });
 
@@ -82,15 +104,10 @@ export class PublicUsersService {
 
     this.logger.log(`User delete request started (userId=${userId}).`);
 
-    const user = await this.prismaService.user.findUnique({
+    const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userId },
       select: { id: true, role: true },
     });
-
-    if (!user) {
-      this.logger.warn(`User delete failed: not found (userId=${userId}).`);
-      throw new NotFoundException('User not found.');
-    }
 
     if (user.role === Role.ADMIN) {
       this.logger.warn(`Admin self-deletion blocked (adminId=${userId}).`);

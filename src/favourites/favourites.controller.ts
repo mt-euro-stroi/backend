@@ -53,7 +53,11 @@ export class FavouritesController {
   @Delete(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Удалить из избранного' })
-  @ApiParam({ name: 'id', type: 'number', description: 'ID избранного' })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'ID квартиры, которую нужно удалить из избранного',
+  })
   @ApiResponse({ status: 200, description: 'Удалено из избранного' })
   async remove(
     @Param('id', ParseIntPipe) id: number,

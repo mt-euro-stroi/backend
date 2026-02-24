@@ -51,7 +51,7 @@ export class AdminComplexController {
     @Body() dto: CreateComplexDto,
     @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
   ) {
-    return await this.adminComplexService.create(
+    return this.adminComplexService.create(
       dto,
       files.map((item) => item.filename),
     );
@@ -61,7 +61,7 @@ export class AdminComplexController {
   @ApiOperation({ summary: 'Админ: список комплексов' })
   @ApiResponse({ status: 200, description: 'Список комплексов' })
   async findAll(@Query() query: AdminFindAllComplexesDto) {
-    return await this.adminComplexService.findAll(query);
+    return this.adminComplexService.findAll(query);
   }
 
   @Get(':identifier')
@@ -75,7 +75,7 @@ export class AdminComplexController {
   })
   @ApiResponse({ status: 200, description: 'Детали комплекса' })
   async findOneBySlug(@Param('identifier') identifier: string) {
-    return await this.adminComplexService.findOne(identifier);
+    return this.adminComplexService.findOne(identifier);
   }
 
   @Patch(':id')
@@ -92,7 +92,7 @@ export class AdminComplexController {
     @Body() dto: UpdateComplexDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return await this.adminComplexService.update(
+    return this.adminComplexService.update(
       id,
       dto,
       files?.map((item) => item.filename) ?? [],
@@ -108,7 +108,7 @@ export class AdminComplexController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateComplexStatusDto,
   ) {
-    return await this.adminComplexService.updateStatus(id, dto);
+    return this.adminComplexService.updateStatus(id, dto);
   }
 
   @Delete(':id')
@@ -116,6 +116,6 @@ export class AdminComplexController {
   @ApiParam({ name: 'id', type: 'number', description: 'ID комплекса' })
   @ApiResponse({ status: 200, description: 'Комплекс удален' })
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return await this.adminComplexService.remove(id);
+    return this.adminComplexService.remove(id);
   }
 }

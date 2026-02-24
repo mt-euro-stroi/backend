@@ -27,7 +27,7 @@ export class MailService {
 
     try {
       const info = await this.transporter.sendMail({
-        from: process.env.MAIN_FROM,
+        from: process.env.MAIL_FROM,
         to: email,
         subject: 'Email verification',
         text: `Your verification code is: ${code}`,

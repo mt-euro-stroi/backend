@@ -1,54 +1,9 @@
-import {
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { PaginationWithSearchDto } from 'src/common/dto/pagination-with-search.dto';
 
-export class FindAllUsersDto {
-  @ApiProperty({
-    example: 1,
-    description: 'Номер страницы',
-    required: false,
-    minimum: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number;
-
-  @ApiProperty({
-    example: 10,
-    description: 'Лимит на страницу',
-    required: false,
-    minimum: 1,
-    maximum: 100,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number;
-
-  @ApiProperty({
-    example: 'ivan',
-    description: 'Поисковый запрос (имя/почта)',
-    required: false,
-    maxLength: 100,
-  })
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value?.trim())
-  @MaxLength(100)
-  search?: string;
-
+export class FindAllUsersDto extends PaginationWithSearchDto {
   @ApiProperty({
     example: true,
     description: 'Фильтр по активности',
@@ -56,7 +11,11 @@ export class FindAllUsersDto {
     type: 'boolean',
   })
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   isActive?: boolean;
 }

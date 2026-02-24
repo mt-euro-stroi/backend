@@ -33,7 +33,8 @@ export class AuthController {
     description: 'Пользователь успешно зарегистрирован',
     schema: {
       example: {
-        message: 'User created successfully. Please verify your email',
+        message:
+          'Registration successful. A verification code has been sent to your email.',
       },
     },
   })
@@ -44,7 +45,7 @@ export class AuthController {
     description: 'Email уже зарегистрирован',
   })
   async signUp(@Body() dto: SignUpDto) {
-    return await this.authService.signUp(dto);
+    return this.authService.signUp(dto);
   }
 
   @Post('sign-in')
@@ -58,12 +59,9 @@ export class AuthController {
     description: 'Успешная аутентификация',
     schema: {
       example: {
-        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        user: {
-          id: 1,
-          email: 'user@example.com',
-          firstName: 'Иван',
-          lastName: 'Петров',
+        message: 'User signed in successfully.',
+        data: {
+          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         },
       },
     },
@@ -75,7 +73,7 @@ export class AuthController {
     description: 'Email не подтвержден',
   })
   async signIn(@Body() dto: SignInDto) {
-    return await this.authService.signIn(dto);
+    return this.authService.signIn(dto);
   }
 
   @Post('verify-email')
@@ -91,7 +89,7 @@ export class AuthController {
     description: 'Неверный или истекший код подтверждения',
   })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return await this.authService.verifyEmail(dto);
+    return this.authService.verifyEmail(dto);
   }
 
   @Post('resend-verification-code')
@@ -107,7 +105,7 @@ export class AuthController {
     description: 'Email не найден или уже подтвержден',
   })
   async resendVerificationCode(@Body() dto: ResendVerificationCodeDto) {
-    return await this.authService.resendVerificationCode(dto);
+    return this.authService.resendVerificationCode(dto);
   }
 
   @Patch('change-password')
@@ -130,6 +128,6 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return await this.authService.changePassword(dto, user);
+    return this.authService.changePassword(dto, user);
   }
 }

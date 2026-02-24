@@ -11,7 +11,11 @@ export class AdminFindAllApartmentsDto extends PublicFindAllApartmentsDto {
     type: 'boolean',
   })
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   isPublished?: boolean;
 }

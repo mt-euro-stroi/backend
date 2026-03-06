@@ -16,6 +16,7 @@ import { ApartmentStatus, BookingStatus } from 'src/generated/prisma/enums';
 import { UpdateBookingStatusDto } from '../dto/update-booking-status.dto';
 import { bookingApartmentInclude } from '../prisma/booking.include';
 import { mapBookingApartment } from '../mappers/booking.mapper';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class AdminBookingsService {
@@ -120,29 +121,44 @@ export class AdminBookingsService {
       `Admin updating booking status (id=${id}, newStatus=${status})`,
     );
 
-    const booking = await this.prismaService.booking.findUnique({
-      where: { id },
-    });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
-    if (status === BookingStatus.CONFIRMED) {
-      const existingConfirmed = await this.prismaService.booking.findFirst({
-        where: {
-          apartmentId: booking.apartmentId,
-          status: BookingStatus.CONFIRMED,
-          NOT: { id },
-        },
+    const updated = await this.prismaService.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id },
       });
 
-      if (existingConfirmed) {
-        throw new ConflictException('Apartment already has confirmed booking');
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
       }
-    }
 
-    const updated = await this.prismaService.$transaction(async (tx) => {
+      if (booking.status === BookingStatus.CANCELLED) {
+        throw new ConflictException('Cancelled booking cannot be modified');
+      }
+
+      if (
+        booking.status === BookingStatus.CONFIRMED &&
+        status === BookingStatus.PENDING
+      ) {
+        throw new ConflictException(
+          'Cannot revert confirmed booking to pending',
+        );
+      }
+
+      if (status === BookingStatus.CONFIRMED) {
+        const existingConfirmed = await tx.booking.findFirst({
+          where: {
+            apartmentId: booking.apartmentId,
+            status: BookingStatus.CONFIRMED,
+            NOT: { id },
+          },
+        });
+
+        if (existingConfirmed) {
+          throw new ConflictException(
+            'Apartment already has confirmed booking',
+          );
+        }
+      }
+
       const updatedBooking = await tx.booking.update({
         where: { id },
         data: { status },
@@ -161,11 +177,26 @@ export class AdminBookingsService {
         });
       }
 
-      if (status === BookingStatus.CANCELLED) {
-        await tx.apartment.update({
-          where: { id: booking.apartmentId },
-          data: { status: ApartmentStatus.AVAILABLE },
+      if (
+        status === BookingStatus.CANCELLED &&
+        booking.status === BookingStatus.CONFIRMED
+      ) {
+        const remainingBookings = await tx.booking.count({
+          where: {
+            apartmentId: booking.apartmentId,
+            NOT: { id },
+            status: {
+              in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+            },
+          },
         });
+
+        if (remainingBookings === 0) {
+          await tx.apartment.update({
+            where: { id: booking.apartmentId },
+            data: { status: ApartmentStatus.AVAILABLE },
+          });
+        }
       }
 
       return updatedBooking;
@@ -188,25 +219,81 @@ export class AdminBookingsService {
   async remove(id: number): Promise<ServiceMessageResponse> {
     this.logger.log(`Admin removing booking (id=${id})`);
 
-    const booking = await this.prismaService.booking.findUnique({
-      where: { id },
-    });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
     await this.prismaService.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id },
+      });
+
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
+      }
+
       await tx.booking.delete({ where: { id } });
 
-      await tx.apartment.update({
-        where: { id: booking.apartmentId },
-        data: { status: ApartmentStatus.AVAILABLE },
+      const remainingBookings = await tx.booking.count({
+        where: {
+          apartmentId: booking.apartmentId,
+          status: {
+            in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+          },
+        },
       });
+
+      if (remainingBookings === 0) {
+        await tx.apartment.update({
+          where: { id: booking.apartmentId },
+          data: { status: ApartmentStatus.AVAILABLE },
+        });
+      }
     });
 
     return {
       message: 'Booking removed successfully',
     };
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async cancelExpiredBookings() {
+    this.logger.log('Cron: checking expired bookings');
+
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    const expiredBookings = await this.prismaService.booking.findMany({
+      where: {
+        status: BookingStatus.PENDING,
+        createdAt: {
+          lte: threeDaysAgo,
+        },
+      },
+    });
+
+    for (const booking of expiredBookings) {
+      await this.prismaService.$transaction(async (tx) => {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { status: BookingStatus.CANCELLED },
+        });
+
+        const remainingBookings = await tx.booking.count({
+          where: {
+            apartmentId: booking.apartmentId,
+            NOT: { id: booking.id },
+            status: {
+              in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+            },
+          },
+        });
+
+        if (remainingBookings === 0) {
+          await tx.apartment.update({
+            where: { id: booking.apartmentId },
+            data: { status: ApartmentStatus.AVAILABLE },
+          });
+        }
+      });
+    }
+
+    this.logger.log(`Cron: ${expiredBookings.length} bookings cancelled`);
   }
 }

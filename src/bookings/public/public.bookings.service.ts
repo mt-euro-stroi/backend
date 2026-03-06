@@ -35,68 +35,68 @@ export class PublicBookingsService {
       `Booking creation attempt (userId=${userId}, apartmentId=${apartmentId})`,
     );
 
-    const apartment = await this.prismaService.apartment.findUnique({
-      where: { id: apartmentId },
-      select: { id: true, status: true, isPublished: true },
-    });
-
-    if (!apartment) {
-      this.logger.warn(
-        `Booking creation failed: apartment not found (apartmentId=${apartmentId})`,
-      );
-      throw new NotFoundException('Apartment not found');
-    }
-
-    if (!apartment.isPublished) {
-      this.logger.warn(
-        `Booking creation failed: apartment not published (apartmentId=${apartmentId})`,
-      );
-      throw new ConflictException('Apartment is not available');
-    }
-
-    if (apartment.status !== ApartmentStatus.AVAILABLE) {
-      this.logger.warn(
-        `Booking creation failed: apartment not available (status=${apartment.status})`,
-      );
-      throw new ConflictException('Apartment is not available for booking');
-    }
-
-    const activeBookingsCount = await this.prismaService.booking.count({
-      where: {
-        userId,
-        status: {
-          in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
-        },
-      },
-    });
-
-    if (activeBookingsCount >= MAX_ACTIVE_BOOKINGS) {
-      this.logger.warn(
-        `Booking limit exceeded (userId=${userId}, activeBookings=${activeBookingsCount})`,
-      );
-
-      throw new ConflictException(
-        `You can have maximum ${MAX_ACTIVE_BOOKINGS} active bookings`,
-      );
-    }
-
-    const existing = await this.prismaService.booking.findUnique({
-      where: {
-        userId_apartmentId: {
-          userId,
-          apartmentId,
-        },
-      },
-    });
-
-    if (existing) {
-      this.logger.warn(
-        `Booking already exists (userId=${userId}, apartmentId=${apartmentId})`,
-      );
-      throw new ConflictException('Booking already exists');
-    }
-
     const booking = await this.prismaService.$transaction(async (tx) => {
+      const apartment = await tx.apartment.findUnique({
+        where: { id: apartmentId },
+        select: { id: true, status: true, isPublished: true },
+      });
+
+      if (!apartment) {
+        this.logger.warn(
+          `Booking creation failed: apartment not found (apartmentId=${apartmentId})`,
+        );
+        throw new NotFoundException('Apartment not found');
+      }
+
+      if (!apartment.isPublished) {
+        this.logger.warn(
+          `Booking creation failed: apartment not published (apartmentId=${apartmentId})`,
+        );
+        throw new ConflictException('Apartment is not available');
+      }
+
+      if (apartment.status === ApartmentStatus.SOLD) {
+        this.logger.warn(
+          `Booking creation failed: apartment already sold (apartmentId=${apartmentId})`,
+        );
+        throw new ConflictException('Apartment already sold');
+      }
+
+      const activeBookingsCount = await tx.booking.count({
+        where: {
+          userId,
+          status: {
+            in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+          },
+        },
+      });
+
+      if (activeBookingsCount >= MAX_ACTIVE_BOOKINGS) {
+        this.logger.warn(
+          `Booking limit exceeded (userId=${userId}, activeBookings=${activeBookingsCount})`,
+        );
+
+        throw new ConflictException(
+          `You can have maximum ${MAX_ACTIVE_BOOKINGS} active bookings`,
+        );
+      }
+
+      const existing = await tx.booking.findUnique({
+        where: {
+          userId_apartmentId: {
+            userId,
+            apartmentId,
+          },
+        },
+      });
+
+      if (existing) {
+        this.logger.warn(
+          `Booking already exists (userId=${userId}, apartmentId=${apartmentId})`,
+        );
+        throw new ConflictException('Booking already exists');
+      }
+
       const createdBooking = await tx.booking.create({
         data: {
           userId,
@@ -106,10 +106,12 @@ export class PublicBookingsService {
         include: bookingApartmentInclude,
       });
 
-      await tx.apartment.update({
-        where: { id: apartmentId },
-        data: { status: ApartmentStatus.RESERVED },
-      });
+      if (apartment.status === ApartmentStatus.AVAILABLE) {
+        await tx.apartment.update({
+          where: { id: apartmentId },
+          data: { status: ApartmentStatus.RESERVED },
+        });
+      }
 
       return createdBooking;
     });
@@ -197,14 +199,25 @@ export class PublicBookingsService {
         },
       });
 
-      await tx.apartment.update({
-        where: { id: apartmentId },
-        data: { status: ApartmentStatus.AVAILABLE },
+      const remainingBookings = await tx.booking.count({
+        where: {
+          apartmentId,
+          status: {
+            in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+          },
+        },
       });
+
+      if (remainingBookings === 0) {
+        await tx.apartment.update({
+          where: { id: apartmentId },
+          data: { status: ApartmentStatus.AVAILABLE },
+        });
+      }
     });
 
     this.logger.log(
-      `Booking removed successfully and apartment released (userId=${userId}, apartmentId=${apartmentId})`,
+      `Booking removed successfully (userId=${userId}, apartmentId=${apartmentId})`,
     );
 
     return {

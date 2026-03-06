@@ -13,6 +13,7 @@ import { ComplexModule } from './complexes/complexes.module';
 import { ApartmentModule } from './apartments/apartments.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { BookingsModule } from './bookings/bookings.module';
         },
       ],
     }),
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [

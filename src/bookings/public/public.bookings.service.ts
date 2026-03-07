@@ -29,7 +29,7 @@ export class PublicBookingsService {
     const userId = authUser.sub;
     const { apartmentId } = dto;
 
-    const MAX_ACTIVE_BOOKINGS = 3;
+    const MAX_ACTIVE_BOOKINGS = Number(process.env.MAX_ACTIVE_BOOKINGS);
 
     this.logger.log(
       `Booking creation attempt (userId=${userId}, apartmentId=${apartmentId})`,
@@ -173,23 +173,24 @@ export class PublicBookingsService {
       `Booking removal attempt (userId=${userId}, apartmentId=${apartmentId})`,
     );
 
-    const existing = await this.prismaService.booking.findUnique({
-      where: {
-        userId_apartmentId: {
-          userId,
-          apartmentId,
-        },
-      },
-    });
-
-    if (!existing) {
-      this.logger.warn(
-        `Booking removal failed: not found (userId=${userId}, apartmentId=${apartmentId})`,
-      );
-      throw new NotFoundException('Бронь не найдена');
-    }
-
     await this.prismaService.$transaction(async (tx) => {
+      const existing = await tx.booking.findUnique({
+        where: {
+          userId_apartmentId: {
+            userId,
+            apartmentId,
+          },
+        },
+      });
+
+      if (!existing) {
+        this.logger.warn(
+          `Booking removal failed: not found (userId=${userId}, apartmentId=${apartmentId})`,
+        );
+        throw new NotFoundException('Бронь не найдена');
+      }
+
+
       await tx.booking.delete({
         where: {
           userId_apartmentId: {

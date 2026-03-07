@@ -35,38 +35,24 @@ export class AdminApartmentService {
 
     const { complexSlug, ...apartmentData } = dto;
 
-    const complex = await this.prismaService.complex.findUnique({
-      where: { slug: complexSlug },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        city: true,
-        address: true,
-        priceFrom: true,
-      },
-    });
-
-    if (!complex) {
-      this.logger.warn(
-        `Apartment creation failed: complex not found (slug=${complexSlug})`,
-      );
-      throw new NotFoundException('Комплекс не найден');
-    }
-
     const apartment = await this.prismaService.$transaction(async (tx) => {
-      const existingApartment = await tx.apartment.findFirst({
-        where: {
-          number: dto.number,
-          entrance: dto.entrance,
-          complexId: complex.id,
+      const complex = await tx.complex.findUnique({
+        where: { slug: complexSlug },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          city: true,
+          address: true,
+          priceFrom: true,
         },
       });
 
-      if (existingApartment) {
-        throw new ConflictException(
-          'Квартира с таким номером уже существует в комплексе',
+      if (!complex) {
+        this.logger.warn(
+          `Apartment creation failed: complex not found (slug=${complexSlug})`,
         );
+        throw new NotFoundException('Комплекс не найден');
       }
 
       if (
@@ -208,72 +194,48 @@ export class AdminApartmentService {
   ): Promise<ServiceDataResponse<ApartmentResponse>> {
     this.logger.log(`Apartment update attempt started (id=${id})`);
 
-    const apartment = await this.prismaService.apartment.findUnique({
-      where: { id },
-      include: {
-        files: { select: { id: true } },
-      },
-    });
-
-    if (!apartment) {
-      this.logger.warn(
-        `Apartment update failed: apartment not found (id=${id})`,
-      );
-      throw new NotFoundException('Квартира не найдена');
-    }
-
     const { deletedFileIds = [], ...updateData } = dto;
 
-    const nextEntrance = updateData.entrance ?? apartment.entrance;
-    const nextNumber = updateData.number ?? apartment.number;
-
-    if (
-      nextEntrance !== apartment.entrance ||
-      nextNumber !== apartment.number
-    ) {
-      const existingApartment = await this.prismaService.apartment.findFirst({
-        where: {
-          id: { not: id },
-          complexId: apartment.complexId,
-          entrance: nextEntrance,
-          number: nextNumber,
-        },
-        select: { id: true },
-      });
-
-      if (existingApartment) {
-        this.logger.warn(
-          `Apartment update rejected: duplicate number in complex (id=${id}, complexId=${apartment.complexId}, entrance=${nextEntrance}, number=${nextNumber})`,
-        );
-        throw new ConflictException(
-          'Квартира с таким номером уже существует в комплексе',
-        );
-      }
-    }
-
-    const filesToDelete = deletedFileIds.length
-      ? await this.prismaService.file.findMany({
-          where: {
-            id: { in: deletedFileIds },
-            apartmentId: apartment.id,
+    const { updatedApartment, filesToDelete } =
+      await this.prismaService.$transaction(async (tx) => {
+        const apartment = await tx.apartment.findUnique({
+          where: { id },
+          include: {
+            files: { select: { id: true, path: true } },
           },
-          select: { id: true, path: true },
-        })
-      : [];
+        });
 
-    const currentFilesCount = apartment.files.length;
-    const remainingFiles =
-      currentFilesCount - filesToDelete.length + (newFiles?.length ?? 0);
+        if (!apartment) {
+          this.logger.warn(
+            `Apartment update failed: apartment not found (id=${id})`,
+          );
+          throw new NotFoundException('Квартира не найдена');
+        }
 
-    if (remainingFiles <= 0) {
-      this.logger.warn(
-        `Apartment update rejected: attempt to remove all files (id=${id})`,
-      );
-      throw new ConflictException('Квартира должна содержать хотя бы один файл');
-    }
+        const filesToDelete = deletedFileIds.length
+          ? await tx.file.findMany({
+              where: {
+                id: { in: deletedFileIds },
+                apartmentId: apartment.id,
+              },
+              select: { id: true, path: true },
+            })
+          : [];
 
-    const updatedApartment = await this.prismaService.$transaction(
-      async (tx) => {
+        const remainingFiles =
+          apartment.files.length -
+          filesToDelete.length +
+          (newFiles.length ?? 0);
+
+        if (remainingFiles <= 0) {
+          this.logger.warn(
+            `Apartment update rejected: attempt to remove all files (id=${id})`,
+          );
+          throw new ConflictException(
+            'Квартира должна содержать хотя бы один файл',
+          );
+        }
+
         const updated = await tx.apartment.update({
           where: { id },
           data: updateData,
@@ -281,49 +243,40 @@ export class AdminApartmentService {
 
         if (filesToDelete.length) {
           await tx.file.deleteMany({
-            where: {
-              id: { in: filesToDelete.map((item) => item.id) },
-              apartmentId: updated.id,
-            },
+            where: { id: { in: filesToDelete.map((f) => f.id) } },
           });
-
-          this.logger.log(
-            `Apartment files deleted in DB (id=${id}, count=${deletedFileIds.length})`,
-          );
         }
 
-        if (newFiles?.length) {
+        if (newFiles.length) {
           await tx.file.createMany({
-            data: newFiles.map((item) => ({
-              path: `apartments/${item}`,
+            data: newFiles.map((f) => ({
+              path: `apartments/${f}`,
               apartmentId: updated.id,
             })),
           });
-
-          this.logger.log(
-            `New files added to apartment (id=${id}, count=${newFiles.length})`,
-          );
         }
 
-        const minPriceAggregate = await tx.apartment.aggregate({
+        const minPrice = await tx.apartment.aggregate({
           where: { complexId: updated.complexId },
           _min: { price: true },
         });
 
         await tx.complex.update({
           where: { id: updated.complexId },
-          data: { priceFrom: minPriceAggregate._min.price ?? null },
+          data: { priceFrom: minPrice._min.price ?? null },
         });
 
-        return tx.apartment.findFirstOrThrow({
+        const updatedApartment = await tx.apartment.findUniqueOrThrow({
           where: { id: updated.id },
           include: apartmentInclude,
         });
-      },
-    );
+
+        return { updatedApartment, filesToDelete };
+      });
 
     if (filesToDelete.length) {
-      await removeUploadedFiles(filesToDelete.map((item) => item.path));
+      await removeUploadedFiles(filesToDelete.map((f) => f.path));
+
       this.logger.log(
         `Apartment files removed from storage (id=${id}, count=${filesToDelete.length})`,
       );
@@ -347,32 +300,32 @@ export class AdminApartmentService {
       `Apartment publish status update started (id=${id}, newStatus=${isPublished})`,
     );
 
-    const existingApartment = await this.prismaService.apartment.findUnique({
+    const apartment = await this.prismaService.apartment.findUnique({
       where: { id },
-      select: { id: true, isPublished: true, complexId: true },
+      select: {
+        id: true,
+        isPublished: true,
+        complexId: true,
+        complex: {
+          select: { isPublished: true },
+        },
+      },
     });
 
-    if (!existingApartment) {
+    if (!apartment) {
       this.logger.warn(
         `Apartment publish update failed: not found (id=${id})`,
       );
       throw new NotFoundException('Квартира не найдена');
     }
 
-    if (isPublished) {
-      const complex = await this.prismaService.complex.findUnique({
-        where: { id: existingApartment.complexId },
-        select: { isPublished: true },
-      });
-
-      if (!complex?.isPublished) {
-        this.logger.warn(
-          `Apartment publish blocked: complex is unpublished (apartmentId=${id})`,
-        );
-        throw new ConflictException(
-          'Невозможно опубликовать квартиру, пока комплекс не опубликован',
-        );
-      }
+    if (isPublished && !apartment.complex?.isPublished) {
+      this.logger.warn(
+        `Apartment publish blocked: complex is unpublished (apartmentId=${id})`,
+      );
+      throw new ConflictException(
+        'Невозможно опубликовать квартиру, пока комплекс не опубликован',
+      );
     }
 
     const updatedApartment = await this.prismaService.apartment.update({
@@ -394,32 +347,37 @@ export class AdminApartmentService {
   async remove(id: number): Promise<ServiceMessageResponse> {
     this.logger.log(`Apartment delete attempt started (id=${id})`);
 
-    const apartment = await this.prismaService.apartment.findUnique({
-      where: { id },
-      include: {
-        files: {
-          select: { path: true },
+    const { filePaths } = await this.prismaService.$transaction(async (tx) => {
+      const apartment = await tx.apartment.findUnique({
+        where: { id },
+        include: {
+          files: {
+            select: { path: true },
+          },
         },
-      },
+      });
+
+      if (!apartment) {
+        this.logger.warn(
+          `Apartment delete failed: apartment not found (id=${id})`,
+        );
+        throw new NotFoundException('Квартира не найдена');
+      }
+
+      await tx.apartment.delete({
+        where: { id },
+      });
+
+      this.logger.log(`Apartment deleted from database (id=${id})`);
+
+      return {
+        filePaths: apartment.files.map((f) => f.path),
+      };
     });
-
-    if (!apartment) {
-      this.logger.warn(
-        `Apartment delete failed: apartment not found (id=${id})`,
-      );
-      throw new NotFoundException('Квартира не найдена');
-    }
-
-    const filePaths = apartment.files.map((item) => item.path);
-
-    await this.prismaService.apartment.delete({
-      where: { id },
-    });
-
-    this.logger.log(`Apartment deleted from database (id=${id})`);
 
     if (filePaths.length) {
       await removeUploadedFiles(filePaths);
+
       this.logger.log(
         `Associated files removed from storage (id=${id}, files=${filePaths.length})`,
       );

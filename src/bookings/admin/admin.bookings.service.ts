@@ -36,8 +36,8 @@ export class AdminBookingsService {
     );
 
     const where = {
-      ...(status && { status }),
-      ...(userId && { userId }),
+      ...(status !== undefined && { status }),
+      ...(userId !== undefined && { userId })
     };
 
     const [bookings, total] = await this.prismaService.$transaction([
@@ -124,6 +124,11 @@ export class AdminBookingsService {
     const updated = await this.prismaService.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id },
+        select: {
+          id: true,
+          status: true,
+          apartmentId: true,
+        },
       });
 
       if (!booking) {
@@ -141,22 +146,6 @@ export class AdminBookingsService {
         throw new ConflictException(
           'Нельзя вернуть подтвержденную бронь в состояние ожидания',
         );
-      }
-
-      if (status === BookingStatus.CONFIRMED) {
-        const existingConfirmed = await tx.booking.findFirst({
-          where: {
-            apartmentId: booking.apartmentId,
-            status: BookingStatus.CONFIRMED,
-            NOT: { id },
-          },
-        });
-
-        if (existingConfirmed) {
-          throw new ConflictException(
-            'Квартира уже имеет подтвержденную бронь',
-          );
-        }
       }
 
       const updatedBooking = await tx.booking.update({
@@ -222,13 +211,18 @@ export class AdminBookingsService {
     await this.prismaService.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id },
+        select: {
+          apartmentId: true,
+        },
       });
 
       if (!booking) {
         throw new NotFoundException('Бронь не найдена');
       }
 
-      await tx.booking.delete({ where: { id } });
+      await tx.booking.delete({
+        where: { id },
+      });
 
       const remainingBookings = await tx.booking.count({
         where: {
@@ -251,7 +245,7 @@ export class AdminBookingsService {
       message: 'Бронь успешно удалена',
     };
   }
-
+ 
   @Cron(CronExpression.EVERY_HOUR)
   async cancelExpiredBookings() {
     this.logger.log('Cron: checking expired bookings');
@@ -262,23 +256,33 @@ export class AdminBookingsService {
     const expiredBookings = await this.prismaService.booking.findMany({
       where: {
         status: BookingStatus.PENDING,
-        createdAt: {
-          lte: threeDaysAgo,
-        },
+        createdAt: { lte: threeDaysAgo },
+      },
+      select: {
+        id: true,
+        apartmentId: true,
       },
     });
 
-    for (const booking of expiredBookings) {
-      await this.prismaService.$transaction(async (tx) => {
-        await tx.booking.update({
-          where: { id: booking.id },
-          data: { status: BookingStatus.CANCELLED },
-        });
+    if (!expiredBookings.length) {
+      this.logger.log('Cron: no expired bookings found');
+      return;
+    }
 
+    const apartmentIds = [...new Set(expiredBookings.map(b => b.apartmentId))];
+    const bookingIds = expiredBookings.map(b => b.id);
+
+    await this.prismaService.$transaction(async (tx) => {
+
+      await tx.booking.updateMany({
+        where: { id: { in: bookingIds } },
+        data: { status: BookingStatus.CANCELLED },
+      });
+
+      for (const apartmentId of apartmentIds) {
         const remainingBookings = await tx.booking.count({
           where: {
-            apartmentId: booking.apartmentId,
-            NOT: { id: booking.id },
+            apartmentId,
             status: {
               in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
             },
@@ -287,12 +291,12 @@ export class AdminBookingsService {
 
         if (remainingBookings === 0) {
           await tx.apartment.update({
-            where: { id: booking.apartmentId },
+            where: { id: apartmentId },
             data: { status: ApartmentStatus.AVAILABLE },
           });
         }
-      });
-    }
+      }
+    });
 
     this.logger.log(`Cron: ${expiredBookings.length} bookings cancelled`);
   }

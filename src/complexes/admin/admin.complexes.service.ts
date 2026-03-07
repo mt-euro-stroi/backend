@@ -35,31 +35,22 @@ export class AdminComplexService {
 
     this.logger.log(`Complex creation attempt started (slug=${slug})`);
 
-    const bySlug = await this.prismaService.complex.findUnique({
-      where: { slug },
-    });
-
-    if (bySlug) {
-      this.logger.warn(
-        `Complex creation conflict: slug already exists (slug=${slug})`,
-      );
-      throw new ConflictException('Комплекс с таким slug уже существует');
-    }
-
     const complex = await this.prismaService.$transaction(async (tx) => {
-      const complex = await tx.complex.create({
-        data: { ...dto },
+      const createdComplex = await tx.complex.create({
+        data: dto,
       });
 
-      await tx.file.createMany({
-        data: files.map((item) => ({
-          path: `complexes/${item}`,
-          complexId: complex.id,
-        })),
-      });
+      if (files.length) {
+        await tx.file.createMany({
+          data: files.map((item) => ({
+            path: `complexes/${item}`,
+            complexId: createdComplex.id,
+          })),
+        });
+      }
 
       return tx.complex.findUniqueOrThrow({
-        where: { id: complex.id },
+        where: { id: createdComplex.id },
         include: complexFilesInclude,
       });
     });
@@ -197,6 +188,7 @@ export class AdminComplexService {
     dto: UpdateComplexDto,
     newFiles: string[],
   ): Promise<ServiceDataResponse<ComplexListItem>> {
+
     this.logger.log(`Complex update attempt started (id=${id})`);
 
     const complex = await this.prismaService.complex.findUnique({
@@ -223,9 +215,8 @@ export class AdminComplexService {
         })
       : [];
 
-    const currentFilesCount = complex.files.length;
     const remainingFiles =
-      currentFilesCount - filesToDelete.length + (newFiles?.length ?? 0);
+      complex.files.length - filesToDelete.length + newFiles.length;
 
     if (remainingFiles <= 0) {
       this.logger.warn(
@@ -237,6 +228,7 @@ export class AdminComplexService {
     }
 
     const updatedComplex = await this.prismaService.$transaction(async (tx) => {
+
       const updated = await tx.complex.update({
         where: { id },
         data: updateData,
@@ -245,16 +237,16 @@ export class AdminComplexService {
       if (filesToDelete.length) {
         await tx.file.deleteMany({
           where: {
-            id: { in: filesToDelete.map((item) => item.id) },
+            id: { in: filesToDelete.map((f) => f.id) },
             complexId: updated.id,
           },
         });
       }
 
-      if (newFiles?.length) {
+      if (newFiles.length) {
         await tx.file.createMany({
-          data: newFiles.map((item) => ({
-            path: `complexes/${item}`,
+          data: newFiles.map((file) => ({
+            path: `complexes/${file}`,
             complexId: updated.id,
           })),
         });
@@ -267,7 +259,7 @@ export class AdminComplexService {
     });
 
     if (filesToDelete.length) {
-      await removeUploadedFiles(filesToDelete.map((item) => item.path));
+      await removeUploadedFiles(filesToDelete.map((f) => f.path));
     }
 
     this.logger.log(`Complex updated successfully (id=${updatedComplex.id})`);
@@ -282,6 +274,7 @@ export class AdminComplexService {
     id: number,
     dto: UpdateComplexStatusDto,
   ): Promise<ServiceDataResponse<ComplexListItem>> {
+
     const { isPublished } = dto;
 
     this.logger.log(
@@ -296,6 +289,18 @@ export class AdminComplexService {
     if (!existingComplex) {
       this.logger.warn(`Complex publish update failed: not found (id=${id})`);
       throw new NotFoundException('Комплекс не найден');
+    }
+
+    if (existingComplex.isPublished === isPublished) {
+      const complex = await this.prismaService.complex.findUniqueOrThrow({
+        where: { id },
+        include: complexFilesInclude,
+      });
+
+      return {
+        message: 'Статус публикации комплекса успешно обновлен',
+        data: complex,
+      };
     }
 
     const updatedComplex = await this.prismaService.complex.update({
@@ -317,24 +322,29 @@ export class AdminComplexService {
   async remove(id: number): Promise<ServiceMessageResponse> {
     this.logger.log(`Complex delete attempt started (id=${id})`);
 
-    const complex = await this.prismaService.complex.findUnique({
-      where: { id },
-      include: {
-        files: {
-          select: { path: true },
+    const { filePaths } = await this.prismaService.$transaction(async (tx) => {
+
+      const complex = await tx.complex.findUnique({
+        where: { id },
+        include: {
+          files: {
+            select: { path: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!complex) {
-      this.logger.warn(`Complex delete failed: not found (id=${id})`);
-      throw new NotFoundException('Комплекс не найден');
-    }
+      if (!complex) {
+        this.logger.warn(`Complex delete failed: not found (id=${id})`);
+        throw new NotFoundException('Комплекс не найден');
+      }
 
-    const filePaths = complex.files.map((item) => item.path);
+      await tx.complex.delete({
+        where: { id },
+      });
 
-    await this.prismaService.complex.delete({
-      where: { id },
+      return {
+        filePaths: complex.files.map((f) => f.path),
+      };
     });
 
     if (filePaths.length) {

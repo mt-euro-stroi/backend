@@ -45,21 +45,21 @@ export class PublicBookingsService {
         this.logger.warn(
           `Booking creation failed: apartment not found (apartmentId=${apartmentId})`,
         );
-        throw new NotFoundException('Apartment not found');
+        throw new NotFoundException('Квартира не найдена');
       }
 
       if (!apartment.isPublished) {
         this.logger.warn(
           `Booking creation failed: apartment not published (apartmentId=${apartmentId})`,
         );
-        throw new ConflictException('Apartment is not available');
+        throw new ConflictException('Квартира не доступна');
       }
 
       if (apartment.status === ApartmentStatus.SOLD) {
         this.logger.warn(
           `Booking creation failed: apartment already sold (apartmentId=${apartmentId})`,
         );
-        throw new ConflictException('Apartment already sold');
+        throw new ConflictException('Квартира уже продана');
       }
 
       const activeBookingsCount = await tx.booking.count({
@@ -77,7 +77,7 @@ export class PublicBookingsService {
         );
 
         throw new ConflictException(
-          `You can have maximum ${MAX_ACTIVE_BOOKINGS} active bookings`,
+          `У вас может быть максимум ${MAX_ACTIVE_BOOKINGS} активных брони`,
         );
       }
 
@@ -94,7 +94,7 @@ export class PublicBookingsService {
         this.logger.warn(
           `Booking already exists (userId=${userId}, apartmentId=${apartmentId})`,
         );
-        throw new ConflictException('Booking already exists');
+        throw new ConflictException('Бронь уже существует');
       }
 
       const createdBooking = await tx.booking.create({
@@ -128,7 +128,7 @@ export class PublicBookingsService {
     };
 
     return {
-      message: 'Apartment booked successfully',
+      message: 'Квартира успешно забронирована',
       data: formattedBooking,
     };
   }
@@ -158,7 +158,7 @@ export class PublicBookingsService {
     );
 
     return {
-      message: 'Bookings retrieved successfully',
+      message: 'Брони успешно получены',
       data: formatted,
     };
   }
@@ -186,7 +186,7 @@ export class PublicBookingsService {
       this.logger.warn(
         `Booking removal failed: not found (userId=${userId}, apartmentId=${apartmentId})`,
       );
-      throw new NotFoundException('Booking not found');
+      throw new NotFoundException('Бронь не найдена');
     }
 
     await this.prismaService.$transaction(async (tx) => {
@@ -221,7 +221,7 @@ export class PublicBookingsService {
     );
 
     return {
-      message: 'Booking removed successfully',
+      message: 'Бронь успешно удалена',
     };
   }
 }

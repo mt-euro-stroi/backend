@@ -25,17 +25,17 @@ export class PublicUsersService {
   async findMe(authUser: AuthUser): Promise<ServiceDataResponse<UserResponse>> {
     const userId = authUser.sub;
 
-    this.logger.log(`User profile request started (userId=${userId}).`);
+    this.logger.log(`User profile request started (userId=${userId})`);
 
     const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userId },
       select: userFullSelect,
     });
 
-    this.logger.log(`User profile retrieved successfully (userId=${userId}).`);
+    this.logger.log(`User profile retrieved successfully (userId=${userId})`);
 
     return {
-      message: 'User retrieved successfully.',
+      message: 'Пользователь успешно получен',
       data: user,
     };
   }
@@ -46,7 +46,7 @@ export class PublicUsersService {
   ): Promise<ServiceDataResponse<UserResponse>> {
     const userId = authUser.sub;
 
-    this.logger.log(`User update request started (userId=${userId}).`);
+    this.logger.log(`User update request started (userId=${userId})`);
 
     const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userId },
@@ -61,9 +61,9 @@ export class PublicUsersService {
 
       if (existingEmail) {
         this.logger.warn(
-          `User update failed: email already exists (userId=${userId}).`,
+          `User update failed: email already exists (userId=${userId})`,
         );
-        throw new ConflictException('Email already in use.');
+        throw new ConflictException('Email уже используется');
       }
 
       resetEmailVerified = true;
@@ -76,9 +76,9 @@ export class PublicUsersService {
 
       if (existingPhone) {
         this.logger.warn(
-          `User update failed: phone already exists (userId=${userId}).`,
+          `User update failed: phone already exists (userId=${userId})`,
         );
-        throw new ConflictException('Phone already in use.');
+        throw new ConflictException('Номер телефона уже используется');
       }
     }
 
@@ -91,10 +91,10 @@ export class PublicUsersService {
       select: userFullSelect,
     });
 
-    this.logger.log(`User updated successfully (userId=${userId}).`);
+    this.logger.log(`User updated successfully (userId=${userId})`);
 
     return {
-      message: 'User updated successfully.',
+      message: 'Пользователь успешно обновлен',
       data: updatedUser,
     };
   }
@@ -102,7 +102,7 @@ export class PublicUsersService {
   async removeMe(authUser: AuthUser): Promise<ServiceMessageResponse> {
     const userId = authUser.sub;
 
-    this.logger.log(`User delete request started (userId=${userId}).`);
+    this.logger.log(`User delete request started (userId=${userId})`);
 
     const user = await this.prismaService.user.findUniqueOrThrow({
       where: { id: userId },
@@ -110,16 +110,16 @@ export class PublicUsersService {
     });
 
     if (user.role === Role.ADMIN) {
-      this.logger.warn(`Admin self-deletion blocked (adminId=${userId}).`);
-      throw new ForbiddenException('Admin cannot delete own account.');
+      this.logger.warn(`Admin self-deletion blocked (adminId=${userId})`);
+      throw new ForbiddenException('Админ не может удалить свою учетную запись');
     }
 
     await this.prismaService.user.delete({
       where: { id: userId },
     });
 
-    this.logger.warn(`User account deleted (userId=${userId}).`);
+    this.logger.warn(`User account deleted (userId=${userId})`);
 
-    return { message: 'User deleted successfully.' };
+    return { message: 'Пользователь успешно удален' };
   }
 }

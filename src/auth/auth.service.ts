@@ -49,7 +49,7 @@ export class AuthService {
   }
 
   async signUp(dto: SignUpDto): Promise<ServiceMessageResponse> {
-    this.logger.log('Sign up attempt started.');
+    this.logger.log('Sign up attempt started');
 
     const { phone, email, password } = dto;
 
@@ -58,9 +58,9 @@ export class AuthService {
     });
 
     if (byPhone) {
-      this.logger.warn('Sign up conflict: phone already exists.');
+      this.logger.warn('Sign up conflict: phone already exists');
       throw new ConflictException(
-        'User with this email or phone already exists.',
+        'Пользователь с таким email или номером телефона уже существует',
       );
     }
 
@@ -69,9 +69,9 @@ export class AuthService {
     });
 
     if (byEmail) {
-      this.logger.warn('Sign up conflict: email already exists.');
+      this.logger.warn('Sign up conflict: email already exists');
       throw new ConflictException(
-        'User with this email or phone already exists.',
+        'Пользователь с таким email или номером телефона уже существует',
       );
     }
 
@@ -92,18 +92,18 @@ export class AuthService {
 
     this.sendVerificationCode(email, verificationCode);
 
-    this.logger.log(`User created successfully (userId=${user.id}).`);
+    this.logger.log(`User created successfully (userId=${user.id})`);
 
     return {
       message:
-        'Registration successful. A verification code has been sent to your email.',
+        'Регистрация прошла успешно. На ваш адрес электронной почты отправлен код подтверждения',
     };
   }
 
   async signIn(
     dto: SignInDto,
   ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
-    this.logger.log('Sign in attempt for email.');
+    this.logger.log('Sign in attempt for email');
 
     const { email, password } = dto;
 
@@ -112,24 +112,24 @@ export class AuthService {
     });
 
     if (!user) {
-      this.logger.warn('Sign in failed: email not found.');
-      throw new UnauthorizedException('Invalid email or password.');
+      this.logger.warn('Sign in failed: email not found');
+      throw new UnauthorizedException('Неверный email или пароль');
     }
 
     if (!user.isActive) {
       this.logger.warn(
-        `Sign in blocked: inactive account (userId=${user.id}).`,
+        `Sign in blocked: inactive account (userId=${user.id})`,
       );
       throw new UnauthorizedException(
-        'Your account has been deactivated. Please contact support.',
+        'Ваша учетная запись деактивирована. Пожалуйста, обратитесь в службу поддержки',
       );
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      this.logger.warn(`Sign in failed: invalid password (userId=${user.id}).`);
-      throw new UnauthorizedException('Invalid email or password.');
+      this.logger.warn(`Sign in failed: invalid password (userId=${user.id})`);
+      throw new UnauthorizedException('Неверный email или пароль');
     }
 
     if (!user.isEmailVerified) {
@@ -141,7 +141,7 @@ export class AuthService {
           this.RESEND_COOLDOWN_MS
       ) {
         throw new ConflictException(
-          'Email is not verified. Please check your email.',
+          'Email не подтвержден. Пожалуйста, проверьте свой email',
         );
       }
 
@@ -160,21 +160,21 @@ export class AuthService {
       this.sendVerificationCode(user.email, verificationCode);
 
       throw new ConflictException(
-        'Email is not verified. A new verification code has been sent.',
+        'Email не подтверждена. Вам отправлен новый код подтверждения',
       );
     }
 
     const accessToken = await this.generateAccessToken(user);
 
-    this.logger.log(`Sign in successful (userId=${user.id}).`);
+    this.logger.log(`Sign in successful (userId=${user.id})`);
 
-    return { message: 'User signed in successfully.', data: { accessToken } };
+    return { message: 'Вход в систему выполнен успешно', data: { accessToken } };
   }
 
   async verifyEmail(
     dto: VerifyEmailDto,
   ): Promise<ServiceMessageResponse | AuthWithTokenResponse> {
-    this.logger.log('Email verification attempt started.');
+    this.logger.log('Email verification attempt started');
 
     const { email, verificationCode } = dto;
 
@@ -183,27 +183,27 @@ export class AuthService {
     });
 
     if (!user) {
-      this.logger.warn('Verification failed: email not found.');
-      throw new BadRequestException('Invalid verification code.');
+      this.logger.warn('Verification failed: email not found');
+      throw new BadRequestException('Неверный код подтверждения');
     }
 
     if (user.isEmailVerified) {
-      this.logger.log(`Email already verified (userId=${user.id}).`);
-      return { message: 'Email is already verified.' };
+      this.logger.log(`Email already verified (userId=${user.id})`);
+      return { message: 'Email уже подтвержден' };
     }
 
     if (!user.verificationCode) {
       this.logger.warn(
-        `Verification failed: code expired (userId=${user.id}).`,
+        `Verification failed: code expired (userId=${user.id})`,
       );
-      throw new BadRequestException('Invalid verification code.');
+      throw new BadRequestException('Неверный код подтверждения');
     }
 
     if (user.verificationCode !== verificationCode) {
       this.logger.warn(
-        `Verification failed: code mismatch (userId=${user.id}).`,
+        `Verification failed: code mismatch (userId=${user.id})`,
       );
-      throw new BadRequestException('Invalid verification code.');
+      throw new BadRequestException('Неверный код подтверждения');
     }
 
     if (
@@ -211,9 +211,9 @@ export class AuthService {
       user.verificationCodeExpiresAt < new Date()
     ) {
       this.logger.warn(
-        `Verification failed: code expired by TTL (userId=${user.id}).`,
+        `Verification failed: code expired by TTL (userId=${user.id})`,
       );
-      throw new BadRequestException('Invalid verification code.');
+      throw new BadRequestException('Неверный код подтверждения');
     }
 
     const updatedUser = await this.prismaService.user.update({
@@ -228,10 +228,10 @@ export class AuthService {
 
     const accessToken = await this.generateAccessToken(updatedUser);
 
-    this.logger.log(`Email verified successfully (userId=${updatedUser.id}).`);
+    this.logger.log(`Email verified successfully (userId=${updatedUser.id})`);
 
     return {
-      message: 'Email verified successfully.',
+      message: 'Email успешно подтвержден',
       data: { accessToken },
     };
   }
@@ -239,7 +239,7 @@ export class AuthService {
   async resendVerificationCode(
     dto: ResendVerificationCodeDto,
   ): Promise<ServiceMessageResponse> {
-    this.logger.log('Resend verification code attempt started.');
+    this.logger.log('Resend verification code attempt started');
 
     const { email } = dto;
 
@@ -248,18 +248,18 @@ export class AuthService {
     });
 
     if (!user) {
-      this.logger.warn('Resend failed: email not found.');
+      this.logger.warn('Resend failed: email not found');
       return {
         message:
-          'If the email exists and requires verification, a new code has been sent.',
+          'Если email существует и требует подтверждения, новый код был отправлен',
       };
     }
 
     if (user.isEmailVerified) {
-      this.logger.warn(`Resend skipped: already verified (userId=${user.id}).`);
+      this.logger.warn(`Resend skipped: already verified (userId=${user.id})`);
       return {
         message:
-          'If the email exists and requires verification, a new code has been sent.',
+          'Если email существует и требует подтверждения, новый код был отправлен',
       };
     }
 
@@ -271,7 +271,7 @@ export class AuthService {
         this.RESEND_COOLDOWN_MS
     ) {
       throw new ConflictException(
-        'Verification code was sent recently. Please wait before requesting a new one.',
+        'Код подтверждения был отправлен недавно. Пожалуйста, подождите, прежде чем запрашивать новый',
       );
     }
 
@@ -289,11 +289,11 @@ export class AuthService {
 
     this.sendVerificationCode(user.email, verificationCode);
 
-    this.logger.log(`Verification code resent (userId=${user.id}).`);
+    this.logger.log(`Verification code resent (userId=${user.id})`);
 
     return {
       message:
-        'If the email exists and requires verification, a new code has been sent.',
+        'Если email существует и требует подтверждения, новый код был отправлен',
     };
   }
 
@@ -303,7 +303,7 @@ export class AuthService {
   ): Promise<ServiceMessageResponse> {
     const userId = authUser.sub;
 
-    this.logger.log(`Password change attempt started (userId=${userId}).`);
+    this.logger.log(`Password change attempt started (userId=${userId})`);
 
     const { currentPassword, newPassword } = dto;
 
@@ -315,9 +315,9 @@ export class AuthService {
 
     if (!isValid) {
       this.logger.warn(
-        `Password change failed: current password incorrect (userId=${userId}).`,
+        `Password change failed: current password incorrect (userId=${userId})`,
       );
-      throw new BadRequestException('Current password is incorrect.');
+      throw new BadRequestException('Текущий пароль неверен');
     }
 
     const newHash = await bcrypt.hash(newPassword, 10);
@@ -327,8 +327,8 @@ export class AuthService {
       data: { password: newHash },
     });
 
-    this.logger.log(`Password changed successfully (userId=${userId}).`);
+    this.logger.log(`Password changed successfully (userId=${userId})`);
 
-    return { message: 'Password changed successfully.' };
+    return { message: 'Пароль успешно изменен' };
   }
 }

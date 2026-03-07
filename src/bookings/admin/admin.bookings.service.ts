@@ -67,7 +67,7 @@ export class AdminBookingsService {
     }));
 
     return {
-      message: 'Bookings retrieved successfully',
+      message: 'Брони успешно получены',
       data: {
         items: formatted,
         total,
@@ -94,11 +94,11 @@ export class AdminBookingsService {
     });
 
     if (!booking) {
-      throw new NotFoundException('Booking not found');
+      throw new NotFoundException('Бронь не найдена');
     }
 
     return {
-      message: 'Booking retrieved successfully',
+      message: 'Бронь успешно получена',
       data: {
         id: booking.id,
         status: booking.status,
@@ -127,11 +127,11 @@ export class AdminBookingsService {
       });
 
       if (!booking) {
-        throw new NotFoundException('Booking not found');
+        throw new NotFoundException('Бронь не найдена');
       }
 
       if (booking.status === BookingStatus.CANCELLED) {
-        throw new ConflictException('Cancelled booking cannot be modified');
+        throw new ConflictException('Отмененная бронь не может быть изменена');
       }
 
       if (
@@ -139,7 +139,7 @@ export class AdminBookingsService {
         status === BookingStatus.PENDING
       ) {
         throw new ConflictException(
-          'Cannot revert confirmed booking to pending',
+          'Нельзя вернуть подтвержденную бронь в состояние ожидания',
         );
       }
 
@@ -154,7 +154,7 @@ export class AdminBookingsService {
 
         if (existingConfirmed) {
           throw new ConflictException(
-            'Apartment already has confirmed booking',
+            'Квартира уже имеет подтвержденную бронь',
           );
         }
       }
@@ -203,7 +203,7 @@ export class AdminBookingsService {
     });
 
     return {
-      message: 'Booking status updated successfully',
+      message: 'Статус брони успешно обновлен',
       data: {
         id: updated.id,
         status: updated.status,
@@ -225,7 +225,7 @@ export class AdminBookingsService {
       });
 
       if (!booking) {
-        throw new NotFoundException('Booking not found');
+        throw new NotFoundException('Бронь не найдена');
       }
 
       await tx.booking.delete({ where: { id } });
@@ -248,7 +248,7 @@ export class AdminBookingsService {
     });
 
     return {
-      message: 'Booking removed successfully',
+      message: 'Бронь успешно удалена',
     };
   }
 

@@ -27,7 +27,7 @@ export class AdminUsersService {
   async findAll(
     query: FindAllUsersDto,
   ): Promise<ServiceDataResponse<PaginatedResult<UserListItem>>> {
-    this.logger.log('Users list request started.');
+    this.logger.log('Users list request started');
 
     const { page = 1, limit = 20, search, isActive } = query;
 
@@ -57,11 +57,11 @@ export class AdminUsersService {
     ]);
 
     this.logger.log(
-      `Users list retrieved: items=${users.length}, total=${total}, page=${page}.`,
+      `Users list retrieved: items=${users.length}, total=${total}, page=${page}`,
     );
 
     return {
-      message: 'Users retrieved successfully.',
+      message: 'Пользователи были успешно получены',
       data: {
         items: users,
         total,
@@ -73,7 +73,7 @@ export class AdminUsersService {
   }
 
   async findOneById(id: number): Promise<ServiceDataResponse<UserResponse>> {
-    this.logger.log(`Admin user lookup started (targetUserId=${id}).`);
+    this.logger.log(`Admin user lookup started (targetUserId=${id})`);
 
     const user = await this.prismaService.user.findUnique({
       where: { id },
@@ -81,14 +81,14 @@ export class AdminUsersService {
     });
 
     if (!user) {
-      this.logger.warn(`User lookup failed: not found (userId=${id}).`);
-      throw new NotFoundException('User not found.');
+      this.logger.warn(`User lookup failed: not found (userId=${id})`);
+      throw new NotFoundException('Пользователь не найден');
     }
 
-    this.logger.log(`Admin user retrieved successfully (targetUserId=${id}).`);
+    this.logger.log(`Admin user retrieved successfully (targetUserId=${id})`);
 
     return {
-      message: 'User retrieved successfully.',
+      message: 'Пользователь был успешно получен',
       data: user,
     };
   }
@@ -102,7 +102,7 @@ export class AdminUsersService {
     const userId = authUser.sub;
 
     this.logger.log(
-      `Admin role update started (targetUserId=${id}, newRole=${role}).`,
+      `Admin role update started (targetUserId=${id}, newRole=${role})`,
     );
 
     const existingUser = await this.prismaService.user.findUnique({
@@ -112,16 +112,16 @@ export class AdminUsersService {
 
     if (!existingUser) {
       this.logger.warn(
-        `Admin role update failed: user not found (targetUserId=${id}).`,
+        `Admin role update failed: user not found (targetUserId=${id})`,
       );
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException('Пользователь не найден');
     }
 
     if (id === userId) {
       this.logger.warn(
-        `Admin role update blocked: attempt to change own role (adminId=${userId}).`,
+        `Admin role update blocked: attempt to change own role (adminId=${userId})`,
       );
-      throw new ForbiddenException('You cannot change your own role.');
+      throw new ForbiddenException('Вы не можете изменить свою собственную роль');
     }
 
     if (existingUser.role === Role.ADMIN && role !== Role.ADMIN) {
@@ -131,10 +131,10 @@ export class AdminUsersService {
 
       if (adminsCount <= 1) {
         this.logger.warn(
-          `Admin role update blocked: attempt to remove last admin (targetUserId=${id}).`,
+          `Admin role update blocked: attempt to remove last admin (targetUserId=${id})`,
         );
         throw new ForbiddenException(
-          'Cannot remove the last admin in the system.',
+          'Невозможно изменить роль последнего админа системы',
         );
       }
     }
@@ -145,10 +145,10 @@ export class AdminUsersService {
       select: userFullSelect,
     });
 
-    this.logger.log(`Admin role updated successfully (targetUserId=${id}).`);
+    this.logger.log(`Admin role updated successfully (targetUserId=${id})`);
 
     return {
-      message: 'User role updated successfully.',
+      message: 'Роль пользователя успешно обновлена',
       data: updatedUser,
     };
   }
@@ -162,7 +162,7 @@ export class AdminUsersService {
     const userId = authUser.sub;
 
     this.logger.log(
-      `Admin user status update started (targetUserId=${id}, newStatus=${isActive}).`,
+      `Admin user status update started (targetUserId=${id}, newStatus=${isActive})`,
     );
 
     const existingUser = await this.prismaService.user.findUnique({
@@ -172,16 +172,16 @@ export class AdminUsersService {
 
     if (!existingUser) {
       this.logger.warn(
-        `Admin user status update failed: user not found (targetUserId=${id}).`,
+        `Admin user status update failed: user not found (targetUserId=${id})`,
       );
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException('Пользователь не найден');
     }
 
     if (id === userId && isActive === false) {
       this.logger.warn(
-        `Admin status update blocked: attempt to deactivate own account (adminId=${userId}).`,
+        `Admin status update blocked: attempt to deactivate own account (adminId=${userId})`,
       );
-      throw new ForbiddenException('You cannot deactivate your own account.');
+      throw new ForbiddenException('Вы не можете деактивировать свою собственную учетную запись');
     }
 
     if (existingUser.role === Role.ADMIN && isActive === false) {
@@ -194,10 +194,10 @@ export class AdminUsersService {
 
       if (adminsCount <= 1) {
         this.logger.warn(
-          `Admin status update blocked: attempt to deactivate last admin (targetUserId=${id}).`,
+          `Admin status update blocked: attempt to deactivate last admin (targetUserId=${id})`,
         );
         throw new ForbiddenException(
-          'Cannot deactivate the last admin in the system.',
+          'Невозможно деактивировать последнего админа системы',
         );
       }
     }
@@ -209,11 +209,11 @@ export class AdminUsersService {
     });
 
     this.logger.log(
-      `Admin user status updated successfully (targetUserId=${id}, newStatus=${isActive}).`,
+      `Admin user status updated successfully (targetUserId=${id}, newStatus=${isActive})`,
     );
 
     return {
-      message: 'User status updated successfully.',
+      message: 'Статус пользователя успешно обновлен',
       data: updatedUser,
     };
   }
@@ -225,7 +225,7 @@ export class AdminUsersService {
     const adminId = authUser.sub;
 
     this.logger.log(
-      `Admin user delete started (targetUserId=${id}, adminId=${adminId}).`,
+      `Admin user delete started (targetUserId=${id}, adminId=${adminId})`,
     );
 
     const targetUser = await this.prismaService.user.findUnique({
@@ -235,14 +235,14 @@ export class AdminUsersService {
 
     if (!targetUser) {
       this.logger.warn(
-        `Admin user delete failed: user not found (targetUserId=${id}).`,
+        `Admin user delete failed: user not found (targetUserId=${id})`,
       );
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException('Пользователь не найден');
     }
 
     if (id === adminId) {
-      this.logger.warn(`Admin self-deletion blocked (adminId=${adminId}).`);
-      throw new ForbiddenException('You cannot delete your own account.');
+      this.logger.warn(`Admin self-deletion blocked (adminId=${adminId})`);
+      throw new ForbiddenException('Вы не можете удалить свою собственную учетную запись');
     }
 
     if (targetUser.role === Role.ADMIN) {
@@ -252,10 +252,10 @@ export class AdminUsersService {
 
       if (adminsCount <= 1) {
         this.logger.warn(
-          `Admin delete blocked: attempt to remove last admin (targetUserId=${id}).`,
+          `Admin delete blocked: attempt to remove last admin (targetUserId=${id})`,
         );
         throw new ForbiddenException(
-          'Cannot delete the last admin in the system.',
+          'Невозможно удалить последнего админа системы',
         );
       }
     }
@@ -265,11 +265,11 @@ export class AdminUsersService {
     });
 
     this.logger.log(
-      `Admin user deleted successfully (targetUserId=${id}, adminId=${adminId}).`,
+      `Admin user deleted successfully (targetUserId=${id}, adminId=${adminId})`,
     );
 
     return {
-      message: 'User deleted successfully.',
+      message: 'Пользователь успешно удален',
     };
   }
 }

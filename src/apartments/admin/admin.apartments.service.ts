@@ -30,7 +30,7 @@ export class AdminApartmentService {
     files: string[],
   ): Promise<ServiceDataResponse<ApartmentResponse>> {
     this.logger.log(
-      `Apartment creation attempt started (number=${dto.number}).`,
+      `Apartment creation attempt started (number=${dto.number})`,
     );
 
     const { complexSlug, ...apartmentData } = dto;
@@ -49,9 +49,9 @@ export class AdminApartmentService {
 
     if (!complex) {
       this.logger.warn(
-        `Apartment creation failed: complex not found (slug=${complexSlug}).`,
+        `Apartment creation failed: complex not found (slug=${complexSlug})`,
       );
-      throw new NotFoundException('Complex not found.');
+      throw new NotFoundException('Комплекс не найден');
     }
 
     const apartment = await this.prismaService.$transaction(async (tx) => {
@@ -65,7 +65,7 @@ export class AdminApartmentService {
 
       if (existingApartment) {
         throw new ConflictException(
-          'Apartment with this number already exists in the complex.',
+          'Квартира с таким номером уже существует в комплексе',
         );
       }
 
@@ -101,10 +101,10 @@ export class AdminApartmentService {
       });
     });
 
-    this.logger.log(`Apartment created successfully (id=${apartment.id}).`);
+    this.logger.log(`Apartment created successfully (id=${apartment.id})`);
 
     return {
-      message: 'Apartment created successfully.',
+      message: 'Квартира успешно создана',
       data: mapApartment(apartment),
     };
   }
@@ -169,7 +169,7 @@ export class AdminApartmentService {
     );
 
     return {
-      message: 'Apartments retrieved successfully.',
+      message: 'Квартиры успешно получены',
       data: {
         items: formatted,
         total,
@@ -181,7 +181,7 @@ export class AdminApartmentService {
   }
 
   async findOne(id: number): Promise<ServiceDataResponse<ApartmentResponse>> {
-    this.logger.log(`Apartment retrieval attempt started (id=${id}).`);
+    this.logger.log(`Apartment retrieval attempt started (id=${id})`);
 
     const apartment = await this.prismaService.apartment.findUnique({
       where: { id },
@@ -189,14 +189,14 @@ export class AdminApartmentService {
     });
 
     if (!apartment) {
-      this.logger.warn(`Apartment not found (id=${id}).`);
-      throw new NotFoundException('Apartment not found.');
+      this.logger.warn(`Apartment not found (id=${id})`);
+      throw new NotFoundException('Квартира не найдена');
     }
 
-    this.logger.log(`Apartment retrieved successfully (id=${id}).`);
+    this.logger.log(`Apartment retrieved successfully (id=${id})`);
 
     return {
-      message: 'Apartment retrieved successfully.',
+      message: 'Квартира успешно получена',
       data: mapApartment(apartment),
     };
   }
@@ -206,7 +206,7 @@ export class AdminApartmentService {
     dto: UpdateApartmentDto,
     newFiles: string[],
   ): Promise<ServiceDataResponse<ApartmentResponse>> {
-    this.logger.log(`Apartment update attempt started (id=${id}).`);
+    this.logger.log(`Apartment update attempt started (id=${id})`);
 
     const apartment = await this.prismaService.apartment.findUnique({
       where: { id },
@@ -217,9 +217,9 @@ export class AdminApartmentService {
 
     if (!apartment) {
       this.logger.warn(
-        `Apartment update failed: apartment not found (id=${id}).`,
+        `Apartment update failed: apartment not found (id=${id})`,
       );
-      throw new NotFoundException(`Apartment with id ${id} not found.`);
+      throw new NotFoundException('Квартира не найдена');
     }
 
     const { deletedFileIds = [], ...updateData } = dto;
@@ -243,10 +243,10 @@ export class AdminApartmentService {
 
       if (existingApartment) {
         this.logger.warn(
-          `Apartment update rejected: duplicate number in complex (id=${id}, complexId=${apartment.complexId}, entrance=${nextEntrance}, number=${nextNumber}).`,
+          `Apartment update rejected: duplicate number in complex (id=${id}, complexId=${apartment.complexId}, entrance=${nextEntrance}, number=${nextNumber})`,
         );
         throw new ConflictException(
-          'Apartment with this number already exists in the complex.',
+          'Квартира с таким номером уже существует в комплексе',
         );
       }
     }
@@ -267,9 +267,9 @@ export class AdminApartmentService {
 
     if (remainingFiles <= 0) {
       this.logger.warn(
-        `Apartment update rejected: attempt to remove all files (id=${id}).`,
+        `Apartment update rejected: attempt to remove all files (id=${id})`,
       );
-      throw new ConflictException(`Apartment must contain at least one file.`);
+      throw new ConflictException('Квартира должна содержать хотя бы один файл');
     }
 
     const updatedApartment = await this.prismaService.$transaction(
@@ -288,7 +288,7 @@ export class AdminApartmentService {
           });
 
           this.logger.log(
-            `Apartment files deleted in DB (id=${id}, count=${deletedFileIds.length}).`,
+            `Apartment files deleted in DB (id=${id}, count=${deletedFileIds.length})`,
           );
         }
 
@@ -301,7 +301,7 @@ export class AdminApartmentService {
           });
 
           this.logger.log(
-            `New files added to apartment (id=${id}, count=${newFiles.length}).`,
+            `New files added to apartment (id=${id}, count=${newFiles.length})`,
           );
         }
 
@@ -325,14 +325,14 @@ export class AdminApartmentService {
     if (filesToDelete.length) {
       await removeUploadedFiles(filesToDelete.map((item) => item.path));
       this.logger.log(
-        `Apartment files removed from storage (id=${id}, count=${filesToDelete.length}).`,
+        `Apartment files removed from storage (id=${id}, count=${filesToDelete.length})`,
       );
     }
 
-    this.logger.log(`Apartment update completed successfully (id=${id}).`);
+    this.logger.log(`Apartment update completed successfully (id=${id})`);
 
     return {
-      message: `Apartment with id ${id} successfully updated.`,
+      message: 'Квартира успешно обновлена',
       data: mapApartment(updatedApartment),
     };
   }
@@ -344,7 +344,7 @@ export class AdminApartmentService {
     const { isPublished } = dto;
 
     this.logger.log(
-      `Apartment publish status update started (id=${id}, newStatus=${isPublished}).`,
+      `Apartment publish status update started (id=${id}, newStatus=${isPublished})`,
     );
 
     const existingApartment = await this.prismaService.apartment.findUnique({
@@ -354,9 +354,9 @@ export class AdminApartmentService {
 
     if (!existingApartment) {
       this.logger.warn(
-        `Apartment publish update failed: not found (id=${id}).`,
+        `Apartment publish update failed: not found (id=${id})`,
       );
-      throw new NotFoundException('Apartment not found.');
+      throw new NotFoundException('Квартира не найдена');
     }
 
     if (isPublished) {
@@ -367,10 +367,10 @@ export class AdminApartmentService {
 
       if (!complex?.isPublished) {
         this.logger.warn(
-          `Apartment publish blocked: complex is unpublished (apartmentId=${id}).`,
+          `Apartment publish blocked: complex is unpublished (apartmentId=${id})`,
         );
         throw new ConflictException(
-          'Cannot publish apartment while complex is unpublished.',
+          'Невозможно опубликовать квартиру, пока комплекс не опубликован',
         );
       }
     }
@@ -382,17 +382,17 @@ export class AdminApartmentService {
     });
 
     this.logger.log(
-      `Apartment publish status updated successfully (id=${id}, newStatus=${isPublished}).`,
+      `Apartment publish status updated successfully (id=${id}, newStatus=${isPublished})`,
     );
 
     return {
-      message: 'Apartment publish status updated successfully.',
+      message: 'Статус публикации квартиры успешно обновлен',
       data: mapApartment(updatedApartment),
     };
   }
 
   async remove(id: number): Promise<ServiceMessageResponse> {
-    this.logger.log(`Apartment delete attempt started (id=${id}).`);
+    this.logger.log(`Apartment delete attempt started (id=${id})`);
 
     const apartment = await this.prismaService.apartment.findUnique({
       where: { id },
@@ -405,9 +405,9 @@ export class AdminApartmentService {
 
     if (!apartment) {
       this.logger.warn(
-        `Apartment delete failed: apartment not found (id=${id}).`,
+        `Apartment delete failed: apartment not found (id=${id})`,
       );
-      throw new NotFoundException(`Apartment with id ${id} not found.`);
+      throw new NotFoundException('Квартира не найдена');
     }
 
     const filePaths = apartment.files.map((item) => item.path);
@@ -416,21 +416,21 @@ export class AdminApartmentService {
       where: { id },
     });
 
-    this.logger.log(`Apartment deleted from database (id=${id}).`);
+    this.logger.log(`Apartment deleted from database (id=${id})`);
 
     if (filePaths.length) {
       await removeUploadedFiles(filePaths);
       this.logger.log(
-        `Associated files removed from storage (id=${id}, files=${filePaths.length}).`,
+        `Associated files removed from storage (id=${id}, files=${filePaths.length})`,
       );
     }
 
     this.logger.log(
-      `Apartment delete process completed successfully (id=${id}).`,
+      `Apartment delete process completed successfully (id=${id})`,
     );
 
     return {
-      message: `Apartment with id ${id} successfully deleted.`,
+      message: 'Квартира успешно удалена',
     };
   }
 }

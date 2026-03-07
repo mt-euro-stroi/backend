@@ -33,7 +33,7 @@ export class AdminComplexService {
   ): Promise<ServiceDataResponse<ComplexListItem>> {
     const { slug } = dto;
 
-    this.logger.log(`Complex creation attempt started (slug=${slug}).`);
+    this.logger.log(`Complex creation attempt started (slug=${slug})`);
 
     const bySlug = await this.prismaService.complex.findUnique({
       where: { slug },
@@ -41,9 +41,9 @@ export class AdminComplexService {
 
     if (bySlug) {
       this.logger.warn(
-        `Complex creation conflict: slug already exists (slug=${slug}).`,
+        `Complex creation conflict: slug already exists (slug=${slug})`,
       );
-      throw new ConflictException('Complex with this slug already exists');
+      throw new ConflictException('Комплекс с таким slug уже существует');
     }
 
     const complex = await this.prismaService.$transaction(async (tx) => {
@@ -65,11 +65,11 @@ export class AdminComplexService {
     });
 
     this.logger.log(
-      `Complex created successfully (id=${complex.id}, slug=${slug}).`,
+      `Complex created successfully (id=${complex.id}, slug=${slug})`,
     );
 
     return {
-      message: 'Complex created successfully',
+      message: 'Комплекс успешно создан',
       data: complex,
     };
   }
@@ -123,7 +123,7 @@ export class AdminComplexService {
     );
 
     return {
-      message: 'Complexes retrieved successfully.',
+      message: 'Комплексы успешно получены',
       data: {
         items: formattedComplexes,
         total,
@@ -137,7 +137,7 @@ export class AdminComplexService {
   async findOne(
     identifier: string,
   ): Promise<ServiceDataResponse<ComplexResponse>> {
-    this.logger.log(`Complex get attempt started (identifier=${identifier}).`);
+    this.logger.log(`Complex get attempt started (identifier=${identifier})`);
 
     const isId = !isNaN(Number(identifier));
 
@@ -171,9 +171,9 @@ export class AdminComplexService {
 
     if (!complex) {
       this.logger.warn(
-        `Complex get failed: not found (identifier=${identifier}).`,
+        `Complex get failed: not found (identifier=${identifier})`,
       );
-      throw new NotFoundException('Complex not found');
+      throw new NotFoundException('Комплекс не найден');
     }
 
     const formattedApartments = complex.apartments.map((item) => ({
@@ -181,10 +181,10 @@ export class AdminComplexService {
       area: Number(item.area),
     }));
 
-    this.logger.log(`Complex retrieved successfully (id=${complex.id}).`);
+    this.logger.log(`Complex retrieved successfully (id=${complex.id})`);
 
     return {
-      message: 'Complex retrieved successfully.',
+      message: 'Комплекс успешно получен',
       data: {
         ...complex,
         apartments: formattedApartments,
@@ -197,7 +197,7 @@ export class AdminComplexService {
     dto: UpdateComplexDto,
     newFiles: string[],
   ): Promise<ServiceDataResponse<ComplexListItem>> {
-    this.logger.log(`Complex update attempt started (id=${id}).`);
+    this.logger.log(`Complex update attempt started (id=${id})`);
 
     const complex = await this.prismaService.complex.findUnique({
       where: { id },
@@ -207,8 +207,8 @@ export class AdminComplexService {
     });
 
     if (!complex) {
-      this.logger.warn(`Complex update failed: not found (id=${id}).`);
-      throw new NotFoundException('Complex not found');
+      this.logger.warn(`Complex update failed: not found (id=${id})`);
+      throw new NotFoundException('Комплекс не найден');
     }
 
     const { deletedFileIds = [], ...updateData } = dto;
@@ -229,10 +229,10 @@ export class AdminComplexService {
 
     if (remainingFiles <= 0) {
       this.logger.warn(
-        `Complex update failed: attempt to delete last image (id=${id}).`,
+        `Complex update failed: attempt to delete last image (id=${id})`,
       );
       throw new ConflictException(
-        'At least one image must remain for the complex',
+        'Для комплекса должно остаться хотя бы одно изображение',
       );
     }
 
@@ -270,10 +270,10 @@ export class AdminComplexService {
       await removeUploadedFiles(filesToDelete.map((item) => item.path));
     }
 
-    this.logger.log(`Complex updated successfully (id=${updatedComplex.id}).`);
+    this.logger.log(`Complex updated successfully (id=${updatedComplex.id})`);
 
     return {
-      message: 'Complex updated successfully.',
+      message: 'Комплекс успешно обновлен',
       data: updatedComplex,
     };
   }
@@ -285,7 +285,7 @@ export class AdminComplexService {
     const { isPublished } = dto;
 
     this.logger.log(
-      `Complex publish status update started (id=${id}, newStatus=${isPublished}).`,
+      `Complex publish status update started (id=${id}, newStatus=${isPublished})`,
     );
 
     const existingComplex = await this.prismaService.complex.findUnique({
@@ -294,8 +294,8 @@ export class AdminComplexService {
     });
 
     if (!existingComplex) {
-      this.logger.warn(`Complex publish update failed: not found (id=${id}).`);
-      throw new NotFoundException('Complex not found');
+      this.logger.warn(`Complex publish update failed: not found (id=${id})`);
+      throw new NotFoundException('Комплекс не найден');
     }
 
     const updatedComplex = await this.prismaService.complex.update({
@@ -305,17 +305,17 @@ export class AdminComplexService {
     });
 
     this.logger.log(
-      `Complex publish status updated successfully (id=${id}, newStatus=${isPublished}).`,
+      `Complex publish status updated successfully (id=${id}, newStatus=${isPublished})`,
     );
 
     return {
-      message: 'Complex publish status updated successfully.',
+      message: 'Статус публикации комплекса успешно обновлен',
       data: updatedComplex,
     };
   }
 
   async remove(id: number): Promise<ServiceMessageResponse> {
-    this.logger.log(`Complex delete attempt started (id=${id}).`);
+    this.logger.log(`Complex delete attempt started (id=${id})`);
 
     const complex = await this.prismaService.complex.findUnique({
       where: { id },
@@ -327,8 +327,8 @@ export class AdminComplexService {
     });
 
     if (!complex) {
-      this.logger.warn(`Complex delete failed: not found (id=${id}).`);
-      throw new NotFoundException('Complex not found');
+      this.logger.warn(`Complex delete failed: not found (id=${id})`);
+      throw new NotFoundException('Комплекс не найден');
     }
 
     const filePaths = complex.files.map((item) => item.path);
@@ -341,10 +341,10 @@ export class AdminComplexService {
       await removeUploadedFiles(filePaths);
     }
 
-    this.logger.log(`Complex deleted successfully (id=${id}).`);
+    this.logger.log(`Complex deleted successfully (id=${id})`);
 
     return {
-      message: 'Complex deleted successfully',
+      message: 'Комплекс успешно удален',
     };
   }
 }

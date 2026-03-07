@@ -13,7 +13,7 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(6)
   @MaxLength(255)
-  @Matches(/^\S+$/, { message: 'New password must not contain spaces' })
+  @Matches(/^\S+$/, { message: 'Текущий пароль не должен содержать пробелов' })
   currentPassword: string;
 
   @ApiProperty({
@@ -26,6 +26,6 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(6)
   @MaxLength(255)
-  @Matches(/^\S+$/, { message: 'New password must not contain spaces' })
+  @Matches(/^\S+$/, { message: 'Новый пароль не должен содержать пробелов' })
   newPassword: string;
 }

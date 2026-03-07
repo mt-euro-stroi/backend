@@ -30,7 +30,7 @@ export class PublicApartmentService {
     } = query;
 
     this.logger.log(
-      `Public apartments list request started (page=${page}, limit=${limit}).`,
+      `Public apartments list request started (page=${page}, limit=${limit})`,
     );
 
     const skip = (page - 1) * limit;
@@ -70,11 +70,11 @@ export class PublicApartmentService {
     const formatted = apartments.map((item) => mapApartment(item));
 
     this.logger.log(
-      `Public apartments retrieved successfully (items=${formatted.length}, total=${total}).`,
+      `Public apartments retrieved successfully (items=${formatted.length}, total=${total})`,
     );
 
     return {
-      message: 'Apartments retrieved successfully.',
+      message: 'Квартиры были успешно получены',
       data: {
         items: formatted,
         total,
@@ -86,7 +86,7 @@ export class PublicApartmentService {
   }
 
   async findOne(id: number): Promise<ServiceDataResponse<ApartmentResponse>> {
-    this.logger.log(`Public apartment retrieval attempt started (id=${id}).`);
+    this.logger.log(`Public apartment retrieval attempt started (id=${id})`);
 
     const apartment = await this.prismaService.apartment.findFirst({
       where: {
@@ -97,14 +97,14 @@ export class PublicApartmentService {
     });
 
     if (!apartment) {
-      this.logger.warn(`Public apartment not found or unpublished (id=${id}).`);
-      throw new NotFoundException('Apartment not found.');
+      this.logger.warn(`Public apartment not found or unpublished (id=${id})`);
+      throw new NotFoundException('Квартира не найдена');
     }
 
-    this.logger.log(`Public apartment retrieved successfully (id=${id}).`);
+    this.logger.log(`Public apartment retrieved successfully (id=${id})`);
 
     return {
-      message: 'Apartment retrieved successfully.',
+      message: 'Квартира успешно получена',
       data: mapApartment(apartment),
     };
   }

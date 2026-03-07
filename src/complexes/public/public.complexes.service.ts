@@ -23,7 +23,7 @@ export class PublicComplexService {
     const { page = 1, limit = 20, search } = query;
 
     this.logger.log(
-      `Public complexes list request started (page=${page}, limit=${limit}).`,
+      `Public complexes list request started (page=${page}, limit=${limit})`,
     );
 
     const skip = (page - 1) * limit;
@@ -62,11 +62,11 @@ export class PublicComplexService {
     }));
 
     this.logger.log(
-      `Public complexes retrieved (items=${formattedComplexes.length}, total=${total}).`,
+      `Public complexes retrieved (items=${formattedComplexes.length}, total=${total})`,
     );
 
     return {
-      message: 'Complexes retrieved successfully.',
+      message: 'Комплексы успешно получены',
       data: {
         items: formattedComplexes,
         total,
@@ -78,7 +78,7 @@ export class PublicComplexService {
   }
 
   async findOne(slug: string): Promise<ServiceDataResponse<ComplexResponse>> {
-    this.logger.log(`Public complex get attempt started (slug=${slug}).`);
+    this.logger.log(`Public complex get attempt started (slug=${slug})`);
 
     const complex = await this.prismaService.complex.findFirst({
       where: {
@@ -113,9 +113,9 @@ export class PublicComplexService {
 
     if (!complex) {
       this.logger.warn(
-        `Public complex get failed: not found or unpublished (slug=${slug}).`,
+        `Public complex get failed: not found or unpublished (slug=${slug})`,
       );
-      throw new NotFoundException('Complex not found');
+      throw new NotFoundException('Комплекс не найден');
     }
 
     const formattedApartments = complex.apartments.map((item) => ({
@@ -124,11 +124,11 @@ export class PublicComplexService {
     }));
 
     this.logger.log(
-      `Public complex retrieved successfully (id=${complex.id}, slug=${slug}).`,
+      `Public complex retrieved successfully (id=${complex.id}, slug=${slug})`,
     );
 
     return {
-      message: 'Complex retrieved successfully.',
+      message: 'Комплекс успешно получен',
       data: {
         ...complex,
         apartments: formattedApartments,

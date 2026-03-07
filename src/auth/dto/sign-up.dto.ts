@@ -37,7 +37,7 @@ export class SignUpDto extends IntersectionType(EmailDto, PasswordDto) {
   @Transform(({ value }) => value?.trim())
   @IsString()
   @Matches(/^\+7\d{10}$/, {
-    message: 'Phone must be in format +7XXXXXXXXXX',
+    message: 'Телефон должен быть в формате +7XXXXXXXXXX',
   })
   phone: string;
 }

@@ -45,14 +45,14 @@ export class FavouritesService {
       this.logger.warn(
         `Favourite creation failed: apartment not found (apartmentId=${apartmentId})`,
       );
-      throw new NotFoundException('Apartment not found');
+      throw new NotFoundException('Квартира не найдена');
     }
 
     if (!apartment.isPublished) {
       this.logger.warn(
         `Favourite creation failed: apartment not published (apartmentId=${apartmentId})`,
       );
-      throw new ConflictException('Apartment is not available');
+      throw new ConflictException('Квартира не доступна');
     }
 
     const existing = await this.prismaService.favourite.findUnique({
@@ -68,7 +68,7 @@ export class FavouritesService {
       this.logger.warn(
         `Favourite already exists (userId=${userId}, apartmentId=${apartmentId})`,
       );
-      throw new ConflictException('Apartment already in favourites');
+      throw new ConflictException('Квартира уже в избранном');
     }
 
     const favourite = await this.prismaService.favourite.create({
@@ -99,7 +99,7 @@ export class FavouritesService {
     };
 
     return {
-      message: 'Apartment added to favourites',
+      message: 'Квартира добавлена в избранное',
       data: formattedFavourite,
     };
   }
@@ -147,7 +147,7 @@ export class FavouritesService {
     );
 
     return {
-      message: 'Favourites retrieved successfully',
+      message: 'Избранные успешно получены',
       data: {
         items: formatted,
         total,
@@ -181,7 +181,7 @@ export class FavouritesService {
       this.logger.warn(
         `Favourite removal failed: not found (userId=${userId}, apartmentId=${id})`,
       );
-      throw new NotFoundException('Favourite not found');
+      throw new NotFoundException('Избранное не найдено');
     }
 
     await this.prismaService.favourite.delete({
@@ -198,7 +198,7 @@ export class FavouritesService {
     );
 
     return {
-      message: 'Apartment removed from favourites',
+      message: 'Квартира удалена из избранного',
     };
   }
 }

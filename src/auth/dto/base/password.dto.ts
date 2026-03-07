@@ -14,7 +14,7 @@ export class PasswordDto {
   @MinLength(6)
   @MaxLength(255)
   @Matches(/^\S+$/, {
-    message: 'Password must not contain spaces',
+    message: 'Пароль не должен содержать пробелов',
   })
   password: string;
 }

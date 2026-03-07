@@ -13,7 +13,7 @@ export class AdminGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request & { user?: any }>();
 
     if (req.user.role !== Role.ADMIN) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException('Доступ запрещен');
     }
 
     return true;

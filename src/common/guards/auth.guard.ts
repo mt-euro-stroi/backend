@@ -25,7 +25,7 @@ export class AuthGuard implements CanActivate {
       this.logger.warn(
         `Authorization header missing or invalid (ip=${req.ip})`,
       );
-      throw new UnauthorizedException('Please authorize');
+      throw new UnauthorizedException('Пожалуйста, авторизуйтесь');
     }
 
     const token = authHeader.split(' ')[1];
@@ -35,14 +35,14 @@ export class AuthGuard implements CanActivate {
 
       if (typeof decoded !== 'object' || !decoded || !('sub' in decoded)) {
         this.logger.warn(`Invalid JWT payload structure (ip=${req.ip})`);
-        throw new UnauthorizedException('Please authorize');
+        throw new UnauthorizedException('Пожалуйста, авторизуйтесь');
       }
 
       const userId = Number(decoded.sub);
 
       if (!userId || Number.isNaN(userId)) {
         this.logger.warn(`Invalid userId in JWT (ip=${req.ip})`);
-        throw new UnauthorizedException('Please authorize');
+        throw new UnauthorizedException('Пожалуйста, авторизуйтесь');
       }
 
       const user = await this.prismaService.user.findUnique({
@@ -58,14 +58,14 @@ export class AuthGuard implements CanActivate {
         this.logger.warn(
           `User from token not found (userId=${userId}, ip=${req.ip})`,
         );
-        throw new UnauthorizedException('Please authorize');
+        throw new UnauthorizedException('Пожалуйста, авторизуйтесь');
       }
 
       if (!user.isActive) {
         this.logger.warn(
           `Deactivated user access attempt (userId=${userId}, ip=${req.ip})`,
         );
-        throw new ForbiddenException('User is deactivated');
+        throw new ForbiddenException('Пользователь деактивирован');
       }
 
       req.user = {
@@ -81,7 +81,7 @@ export class AuthGuard implements CanActivate {
 
       this.logger.warn(`JWT validation failed (ip=${req.ip})`);
 
-      throw new UnauthorizedException('Please authorize');
+      throw new UnauthorizedException('Пожалуйста, авторизуйтесь');
     }
   }
 }

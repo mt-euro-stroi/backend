@@ -40,12 +40,9 @@ export class AuthService {
       );
   }
 
-  private async generateAccessToken(user: User) {
-    console.log(user);
-    
+  private async generateAccessToken(user: User) {    
     return this.jwtService.signAsync({
       sub: user.id,
-      email: user.email,
       role: user.role,
     });
   }

@@ -132,7 +132,7 @@ export class MailService {
       CREATED: {
         subject: 'Бронь создана',
         title: 'Ваша бронь создана',
-        text: 'Мы получили вашу заявку на бронирование. Если бронь не будет подтверждена администратором в течение 3 дней, она будет автоматически отменена.',
+        text: `Мы получили вашу заявку на бронирование. Если бронь не будет подтверждена администратором в течение  дней, она будет автоматически отменена.`,
       },
       CONFIRMED: {
         subject: 'Бронь подтверждена',
@@ -174,10 +174,16 @@ export class MailService {
             </tr>
 
             <tr>
-              <td align="center" style="padding:25px 0">
-                <div style="font-size:18px;font-weight:bold;color:#333">
+              <td align="center" style="padding:35px 0">
+                <div style="display:inline-block;padding:16px 28px;font-size:18px;font-weight:bold;color:#ffffff;background:linear-gradient(135deg,#b8860a,#daa520);border-radius:10px">
                   ${apartmentTitle}
                 </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="font-size:14px;color:#888888;text-align:center;padding-bottom:25px">
+                Если у вас есть вопросы, свяжитесь с нами.
               </td>
             </tr>
 

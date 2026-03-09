@@ -13,14 +13,18 @@ import {
 } from 'src/common/types/service-response.types';
 import { BookingBase, BookingResponse } from '../types/bookings-response.types';
 import { ApartmentStatus, BookingStatus } from 'src/generated/prisma/enums';
-import { bookingApartmentInclude } from '../prisma/booking.include';
+import { bookingApartmentInclude, bookingInclude } from '../prisma/booking.include';
 import { mapBookingApartment } from '../mappers/booking.mapper';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class PublicBookingsService {
   private readonly logger = new Logger(PublicBookingsService.name);
 
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly mailService: MailService
+  ) {}
 
   async create(
     dto: CreateBookingDto,
@@ -95,13 +99,21 @@ export class PublicBookingsService {
           apartmentId,
           status: BookingStatus.PENDING,
         },
-        include: bookingApartmentInclude,
+        include: bookingInclude
       });
 
       return createdBooking;
     });
 
     this.logger.log(`Booking created successfully (id=${booking.id})`);
+
+    const apartmentTitle = `${booking.apartment.complex.title} — квартира ${booking.apartment.number}`;
+
+    await this.mailService.sendBookingStatusEmail({
+      email: booking.user.email,
+      apartmentTitle,
+      status: 'CREATED',
+    });
 
     const formattedBooking: BookingResponse = {
       id: booking.id,
@@ -149,51 +161,41 @@ export class PublicBookingsService {
   }
 
   async remove(
-    apartmentId: number,
+    id: number,
     authUser: AuthUser,
   ): Promise<ServiceMessageResponse> {
     const userId = authUser.sub;
 
     this.logger.log(
-      `Booking removal attempt (userId=${userId}, apartmentId=${apartmentId})`,
+      `Booking removal attempt (bookingId=${id}, userId=${userId})`,
     );
 
-    await this.prismaService.$transaction(async (tx) => {
-      const existing = await tx.booking.findUnique({
-        where: {
-          userId_apartmentId: {
-            userId,
-            apartmentId,
-          },
-        },
-        select: {
-          id: true,
-          status: true,
-        },
+    const booking = await this.prismaService.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id },
+        include: bookingInclude,
       });
 
-      if (!existing) {
+      if (!booking || booking.userId !== userId) {
         this.logger.warn(
-          `Booking removal failed: not found (userId=${userId}, apartmentId=${apartmentId})`,
+          `Booking removal failed: not found or forbidden (bookingId=${id}, userId=${userId})`,
         );
         throw new NotFoundException('Бронь не найдена');
       }
 
-      if (existing.status === BookingStatus.CONFIRMED) {
+      if (booking.status === BookingStatus.CONFIRMED) {
         throw new ConflictException(
           'Нельзя отменить подтвержденную бронь. Свяжитесь с администратором',
         );
       }
 
       await tx.booking.delete({
-        where: {
-          id: existing.id,
-        },
+        where: { id },
       });
 
       const remainingBookings = await tx.booking.count({
         where: {
-          apartmentId,
+          apartmentId: booking.apartmentId,
           status: {
             in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
           },
@@ -202,15 +204,25 @@ export class PublicBookingsService {
 
       if (remainingBookings === 0) {
         await tx.apartment.update({
-          where: { id: apartmentId },
+          where: { id: booking.apartmentId },
           data: { status: ApartmentStatus.AVAILABLE },
         });
       }
+
+      return booking;
     });
 
     this.logger.log(
-      `Booking removed successfully (userId=${userId}, apartmentId=${apartmentId})`,
+      `Booking removed successfully (bookingId=${id}, userId=${userId})`,
     );
+
+    const apartmentTitle = `${booking.apartment.complex.title} — квартира ${booking.apartment.number}`;
+
+    await this.mailService.sendBookingStatusEmail({
+      email: booking.user.email,
+      apartmentTitle,
+      status: 'REMOVED',
+    });
 
     return {
       message: 'Бронь успешно отменена',

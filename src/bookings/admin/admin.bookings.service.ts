@@ -14,15 +14,19 @@ import {
 import { BookingAdminResponse } from '../types/bookings-response.types';
 import { ApartmentStatus, BookingStatus } from 'src/generated/prisma/enums';
 import { UpdateBookingStatusDto } from '../dto/update-booking-status.dto';
-import { bookingApartmentInclude } from '../prisma/booking.include';
+import { bookingAdminInclude, bookingApartmentInclude } from '../prisma/booking.include';
 import { mapBookingApartment } from '../mappers/booking.mapper';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AdminBookingsService {
   private readonly logger = new Logger(AdminBookingsService.name);
 
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly mailService: MailService
+  ) {}
 
   async findAll(
     query: AdminFindAllBookingsDto,
@@ -46,12 +50,7 @@ export class AdminBookingsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
-          user: {
-            select: { id: true, email: true, firstName: true, lastName: true },
-          },
-          ...bookingApartmentInclude,
-        },
+        include: bookingAdminInclude,
       }),
       this.prismaService.booking.count({ where }),
     ]);
@@ -85,12 +84,7 @@ export class AdminBookingsService {
 
     const booking = await this.prismaService.booking.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: { id: true, email: true, firstName: true, lastName: true },
-        },
-        ...bookingApartmentInclude,
-      },
+      include: bookingAdminInclude,
     });
 
     if (!booking) {
@@ -165,12 +159,7 @@ export class AdminBookingsService {
         const updatedBooking = await tx.booking.update({
           where: { id },
           data: { status: BookingStatus.CONFIRMED },
-          include: {
-            user: {
-              select: { id: true, email: true, firstName: true, lastName: true },
-            },
-            ...bookingApartmentInclude,
-          },
+          include: bookingAdminInclude,
         });
 
         await tx.booking.updateMany({
@@ -193,12 +182,7 @@ export class AdminBookingsService {
       const updatedBooking = await tx.booking.update({
         where: { id },
         data: { status: BookingStatus.CANCELLED },
-        include: {
-          user: {
-            select: { id: true, email: true, firstName: true, lastName: true },
-          },
-          ...bookingApartmentInclude,
-        },
+        include: bookingAdminInclude,
       });
 
       const remainingBookings = await tx.booking.count({
@@ -219,6 +203,15 @@ export class AdminBookingsService {
       }
 
       return updatedBooking;
+    });
+
+    const apartmentTitle =
+      `${updated.apartment.complex.title} — квартира ${updated.apartment.number}`;
+    
+    await this.mailService.sendBookingStatusEmail({
+      email: updated.user.email,
+      apartmentTitle,
+      status: updated.status === BookingStatus.CONFIRMED ? 'CONFIRMED' : 'CANCELLED',
     });
 
     return {

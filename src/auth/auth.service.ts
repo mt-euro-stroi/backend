@@ -41,6 +41,8 @@ export class AuthService {
   }
 
   private async generateAccessToken(user: User) {
+    console.log(user);
+    
     return this.jwtService.signAsync({
       sub: user.id,
       email: user.email,
@@ -117,9 +119,7 @@ export class AuthService {
     }
 
     if (!user.isActive) {
-      this.logger.warn(
-        `Sign in blocked: inactive account (userId=${user.id})`,
-      );
+      this.logger.warn(`Sign in blocked: inactive account (userId=${user.id})`);
       throw new UnauthorizedException(
         'Ваша учетная запись деактивирована. Пожалуйста, обратитесь в службу поддержки',
       );
@@ -168,7 +168,10 @@ export class AuthService {
 
     this.logger.log(`Sign in successful (userId=${user.id})`);
 
-    return { message: 'Вход в систему выполнен успешно', data: { accessToken } };
+    return {
+      message: 'Вход в систему выполнен успешно',
+      data: { accessToken },
+    };
   }
 
   async verifyEmail(
@@ -193,9 +196,7 @@ export class AuthService {
     }
 
     if (!user.verificationCode) {
-      this.logger.warn(
-        `Verification failed: code expired (userId=${user.id})`,
-      );
+      this.logger.warn(`Verification failed: code expired (userId=${user.id})`);
       throw new BadRequestException('Неверный код подтверждения');
     }
 

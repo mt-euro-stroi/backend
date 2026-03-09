@@ -121,7 +121,9 @@ export class AdminUsersService {
       this.logger.warn(
         `Admin role update blocked: attempt to change own role (adminId=${userId})`,
       );
-      throw new ForbiddenException('Вы не можете изменить свою собственную роль');
+      throw new ForbiddenException(
+        'Вы не можете изменить свою собственную роль',
+      );
     }
 
     if (existingUser.role === Role.ADMIN && role !== Role.ADMIN) {
@@ -181,7 +183,9 @@ export class AdminUsersService {
       this.logger.warn(
         `Admin status update blocked: attempt to deactivate own account (adminId=${userId})`,
       );
-      throw new ForbiddenException('Вы не можете деактивировать свою собственную учетную запись');
+      throw new ForbiddenException(
+        'Вы не можете деактивировать свою собственную учетную запись',
+      );
     }
 
     if (existingUser.role === Role.ADMIN && isActive === false) {
@@ -242,7 +246,9 @@ export class AdminUsersService {
 
     if (id === adminId) {
       this.logger.warn(`Admin self-deletion blocked (adminId=${adminId})`);
-      throw new ForbiddenException('Вы не можете удалить свою собственную учетную запись');
+      throw new ForbiddenException(
+        'Вы не можете удалить свою собственную учетную запись',
+      );
     }
 
     if (targetUser.role === Role.ADMIN) {

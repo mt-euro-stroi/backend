@@ -38,7 +38,11 @@ export class PublicBookingsService {
     const booking = await this.prismaService.$transaction(async (tx) => {
       const apartment = await tx.apartment.findUnique({
         where: { id: apartmentId },
-        select: { id: true, status: true, isPublished: true },
+        select: {
+          id: true,
+          status: true,
+          isPublished: true,
+        },
       });
 
       if (!apartment) {
@@ -49,16 +53,10 @@ export class PublicBookingsService {
       }
 
       if (!apartment.isPublished) {
-        this.logger.warn(
-          `Booking creation failed: apartment not published (apartmentId=${apartmentId})`,
-        );
         throw new ConflictException('Квартира не доступна');
       }
 
       if (apartment.status === ApartmentStatus.SOLD) {
-        this.logger.warn(
-          `Booking creation failed: apartment already sold (apartmentId=${apartmentId})`,
-        );
         throw new ConflictException('Квартира уже продана');
       }
 
@@ -72,28 +70,22 @@ export class PublicBookingsService {
       });
 
       if (activeBookingsCount >= MAX_ACTIVE_BOOKINGS) {
-        this.logger.warn(
-          `Booking limit exceeded (userId=${userId}, activeBookings=${activeBookingsCount})`,
-        );
-
         throw new ConflictException(
           `У вас может быть максимум ${MAX_ACTIVE_BOOKINGS} активных брони`,
         );
       }
 
-      const existing = await tx.booking.findUnique({
+      const existing = await tx.booking.findFirst({
         where: {
-          userId_apartmentId: {
-            userId,
-            apartmentId,
+          userId,
+          apartmentId,
+          status: {
+            in: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
           },
         },
       });
 
       if (existing) {
-        this.logger.warn(
-          `Booking already exists (userId=${userId}, apartmentId=${apartmentId})`,
-        );
         throw new ConflictException('Бронь уже существует');
       }
 
@@ -105,13 +97,6 @@ export class PublicBookingsService {
         },
         include: bookingApartmentInclude,
       });
-
-      if (apartment.status === ApartmentStatus.AVAILABLE) {
-        await tx.apartment.update({
-          where: { id: apartmentId },
-          data: { status: ApartmentStatus.RESERVED },
-        });
-      }
 
       return createdBooking;
     });
@@ -132,7 +117,7 @@ export class PublicBookingsService {
       data: formattedBooking,
     };
   }
-
+  
   async findAll(
     authUser: AuthUser,
   ): Promise<ServiceDataResponse<BookingBase[]>> {
@@ -181,6 +166,10 @@ export class PublicBookingsService {
             apartmentId,
           },
         },
+        select: {
+          id: true,
+          status: true,
+        },
       });
 
       if (!existing) {
@@ -190,13 +179,15 @@ export class PublicBookingsService {
         throw new NotFoundException('Бронь не найдена');
       }
 
+      if (existing.status === BookingStatus.CONFIRMED) {
+        throw new ConflictException(
+          'Нельзя отменить подтвержденную бронь. Свяжитесь с администратором',
+        );
+      }
 
       await tx.booking.delete({
         where: {
-          userId_apartmentId: {
-            userId,
-            apartmentId,
-          },
+          id: existing.id,
         },
       });
 
@@ -222,7 +213,7 @@ export class PublicBookingsService {
     );
 
     return {
-      message: 'Бронь успешно удалена',
+      message: 'Бронь успешно отменена',
     };
   }
 }

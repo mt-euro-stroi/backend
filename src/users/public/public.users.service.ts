@@ -111,7 +111,9 @@ export class PublicUsersService {
 
     if (user.role === Role.ADMIN) {
       this.logger.warn(`Admin self-deletion blocked (adminId=${userId})`);
-      throw new ForbiddenException('Админ не может удалить свою учетную запись');
+      throw new ForbiddenException(
+        'Админ не может удалить свою учетную запись',
+      );
     }
 
     await this.prismaService.user.delete({

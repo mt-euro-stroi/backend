@@ -110,7 +110,7 @@ export class MailService {
       </tr>
     </table>
     `;
-    
+
     return this.sendEmail({
       to: email,
       subject,
@@ -132,7 +132,7 @@ export class MailService {
       CREATED: {
         subject: 'Бронь создана',
         title: 'Ваша бронь создана',
-        text: 'Мы получили вашу заявку на бронирование.',
+        text: 'Мы получили вашу заявку на бронирование. Если бронь не будет подтверждена администратором в течение 3 дней, она будет автоматически отменена.',
       },
       CONFIRMED: {
         subject: 'Бронь подтверждена',

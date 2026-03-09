@@ -36,7 +36,9 @@ export class CreateComplexDto {
   @Transform(({ value }) => value?.trim().toLowerCase())
   @MinLength(3)
   @MaxLength(255)
-  @Matches(/^[a-z0-9-]+$/, { message: 'Slug может содержать только строчные буквы, цифры и дефисы' })
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'Slug может содержать только строчные буквы, цифры и дефисы',
+  })
   slug: string;
 
   @ApiProperty({

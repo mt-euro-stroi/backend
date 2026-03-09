@@ -313,9 +313,7 @@ export class AdminApartmentService {
     });
 
     if (!apartment) {
-      this.logger.warn(
-        `Apartment publish update failed: not found (id=${id})`,
-      );
+      this.logger.warn(`Apartment publish update failed: not found (id=${id})`);
       throw new NotFoundException('Квартира не найдена');
     }
 

@@ -188,7 +188,6 @@ export class AdminComplexService {
     dto: UpdateComplexDto,
     newFiles: string[],
   ): Promise<ServiceDataResponse<ComplexListItem>> {
-
     this.logger.log(`Complex update attempt started (id=${id})`);
 
     const complex = await this.prismaService.complex.findUnique({
@@ -228,7 +227,6 @@ export class AdminComplexService {
     }
 
     const updatedComplex = await this.prismaService.$transaction(async (tx) => {
-
       const updated = await tx.complex.update({
         where: { id },
         data: updateData,
@@ -274,7 +272,6 @@ export class AdminComplexService {
     id: number,
     dto: UpdateComplexStatusDto,
   ): Promise<ServiceDataResponse<ComplexListItem>> {
-
     const { isPublished } = dto;
 
     this.logger.log(
@@ -323,7 +320,6 @@ export class AdminComplexService {
     this.logger.log(`Complex delete attempt started (id=${id})`);
 
     const { filePaths } = await this.prismaService.$transaction(async (tx) => {
-
       const complex = await tx.complex.findUnique({
         where: { id },
         include: {

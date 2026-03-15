@@ -4,26 +4,124 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateApartmentDto } from '../dto/create-apartment.dto';
-import { UpdateApartmentDto } from '../dto/update-apartment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AdminFindAllApartmentsDto } from '../dto/admin-find-all-apartments.dto';
+import { PublicFindAllApartmentsDto } from './dto/public-find-all-apartments.dto';
 import {
   PaginatedResult,
   ServiceDataResponse,
   ServiceMessageResponse,
 } from 'src/common/types/service-response.types';
+import {
+  ApartmentListItem,
+  ApartmentResponse,
+} from './types/apartment-response.types';
+import {
+  apartmentListSelect,
+  apartmentResponseSelect,
+} from './prisma/apartment.select';
+import { mapApartment } from './mappers/apartment.mapper';
+import { CreateApartmentDto } from './dto/create-apartment.dto';
+import { AdminFindAllApartmentsDto } from './dto/admin-find-all-apartments.dto';
+import { UpdateApartmentDto } from './dto/update-apartment.dto';
+import { UpdateApartmentStatusDto } from './dto/update-apartment-status.dto';
 import { removeUploadedFiles } from 'src/common/utils/remove-uploaded-files.util';
-import { ApartmentResponse } from '../types/apartment-response.types';
-import { UpdateApartmentStatusDto } from '../dto/update-apartment-status.dto';
-import { apartmentInclude } from '../prisma/apartment.include';
-import { mapApartment } from '../mappers/apartment.mapper';
 
 @Injectable()
-export class AdminApartmentService {
-  private readonly logger = new Logger(AdminApartmentService.name);
+export class ApartmentService {
+  private readonly logger = new Logger(ApartmentService.name);
 
   constructor(private readonly prismaService: PrismaService) {}
+
+  async findAll(
+    query: PublicFindAllApartmentsDto,
+  ): Promise<ServiceDataResponse<PaginatedResult<ApartmentListItem>>> {
+    const {
+      page = 1,
+      limit = 20,
+      minPrice,
+      maxPrice,
+      rooms,
+      floor,
+      status,
+      search,
+    } = query;
+
+    this.logger.log(
+      `Public apartments list request started (page=${page}, limit=${limit})`,
+    );
+
+    const skip = (page - 1) * limit;
+
+    const priceFilter =
+      minPrice !== undefined || maxPrice !== undefined
+        ? {
+            price: {
+              ...(minPrice !== undefined && { gte: minPrice }),
+              ...(maxPrice !== undefined && { lte: maxPrice }),
+            },
+          }
+        : {};
+
+    const where = {
+      isPublished: true,
+      ...(status !== undefined && { status }),
+      ...(rooms !== undefined && { rooms }),
+      ...(floor !== undefined && { floor }),
+      ...priceFilter,
+      ...(search?.trim() && {
+        description: { search },
+      }),
+    };
+
+    const [apartments, total] = await this.prismaService.$transaction([
+      this.prismaService.apartment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: apartmentListSelect,
+      }),
+      this.prismaService.apartment.count({ where }),
+    ]);
+
+    this.logger.log(
+      `Public apartments retrieved successfully (items=${apartments.length}, total=${total})`,
+    );
+
+    const formatted = apartments.map(mapApartment);
+
+    return {
+      message: 'Квартиры были успешно получены',
+      data: {
+        items: formatted,
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOne(id: number): Promise<ServiceDataResponse<ApartmentResponse>> {
+    this.logger.log(`Public apartment retrieval attempt started (id=${id})`);
+
+    const apartment = await this.prismaService.apartment.findUnique({
+      where: { id },
+      select: apartmentResponseSelect,
+    });
+
+    if (!apartment || !apartment.isPublished) {
+      this.logger.warn(`Public apartment not found or unpublished (id=${id})`);
+      throw new NotFoundException('Квартира не найдена');
+    }
+
+    this.logger.log(`Public apartment retrieved successfully (id=${id})`);
+
+    return {
+      message: 'Квартира успешно получена',
+      data: mapApartment(apartment),
+    };
+  }
 
   async create(
     dto: CreateApartmentDto,
@@ -83,7 +181,7 @@ export class AdminApartmentService {
 
       return tx.apartment.findUniqueOrThrow({
         where: { id: createdApartment.id },
-        include: apartmentInclude,
+        select: apartmentResponseSelect,
       });
     });
 
@@ -95,9 +193,9 @@ export class AdminApartmentService {
     };
   }
 
-  async findAll(
+  async findAllAdmin(
     query: AdminFindAllApartmentsDto,
-  ): Promise<ServiceDataResponse<PaginatedResult<ApartmentResponse>>> {
+  ): Promise<ServiceDataResponse<PaginatedResult<ApartmentListItem>>> {
     const {
       page = 1,
       limit = 20,
@@ -133,7 +231,7 @@ export class AdminApartmentService {
       ...(isPublished !== undefined && { isPublished }),
       ...priceFilter,
       ...(search?.trim() && {
-        OR: [{ description: { search } }],
+        description: { search },
       }),
     };
 
@@ -143,16 +241,16 @@ export class AdminApartmentService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: apartmentInclude,
+        select: apartmentListSelect,
       }),
       this.prismaService.apartment.count({ where }),
     ]);
 
-    const formatted = apartments.map((item) => mapApartment(item));
-
     this.logger.log(
-      `Apartments retrieved successfully (items=${formatted.length}, total=${total}, page=${page})`,
+      `Apartments retrieved successfully (items=${apartments.length}, total=${total}, page=${page})`,
     );
+
+    const formatted = apartments.map(mapApartment);
 
     return {
       message: 'Квартиры успешно получены',
@@ -166,12 +264,14 @@ export class AdminApartmentService {
     };
   }
 
-  async findOne(id: number): Promise<ServiceDataResponse<ApartmentResponse>> {
+  async findOneAdmin(
+    id: number,
+  ): Promise<ServiceDataResponse<ApartmentResponse>> {
     this.logger.log(`Apartment retrieval attempt started (id=${id})`);
 
     const apartment = await this.prismaService.apartment.findUnique({
       where: { id },
-      include: apartmentInclude,
+      select: apartmentResponseSelect,
     });
 
     if (!apartment) {
@@ -268,7 +368,7 @@ export class AdminApartmentService {
 
         const updatedApartment = await tx.apartment.findUniqueOrThrow({
           where: { id: updated.id },
-          include: apartmentInclude,
+          select: apartmentResponseSelect,
         });
 
         return { updatedApartment, filesToDelete };
@@ -329,7 +429,7 @@ export class AdminApartmentService {
     const updatedApartment = await this.prismaService.apartment.update({
       where: { id },
       data: { isPublished },
-      include: apartmentInclude,
+      select: apartmentResponseSelect,
     });
 
     this.logger.log(

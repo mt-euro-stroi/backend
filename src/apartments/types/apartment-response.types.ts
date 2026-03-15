@@ -1,28 +1,13 @@
-import { File } from 'src/common/types/file.type';
-import { ApartmentStatus } from 'src/generated/prisma/enums';
+import { Prisma } from 'src/generated/prisma/client';
+import {
+  apartmentListSelect,
+  apartmentResponseSelect,
+} from '../prisma/apartment.select';
 
-export interface ApartmentListItem {
-  id: number;
-  entrance: number;
-  number: number;
-  rooms: number;
-  area: number;
-  floor: number;
-  price: number;
-  status: ApartmentStatus;
-  isPublished: boolean;
-  files: File[];
-}
+export type ApartmentListItem = Prisma.ApartmentGetPayload<{
+  select: typeof apartmentListSelect;
+}>;
 
-export interface ApartmentResponse extends ApartmentListItem {
-  description?: string | null;
-  complex: {
-    id: number;
-    title: string;
-    slug: string;
-    city: string;
-    address: string;
-  };
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type ApartmentResponse = Prisma.ApartmentGetPayload<{
+  select: typeof apartmentResponseSelect;
+}>;

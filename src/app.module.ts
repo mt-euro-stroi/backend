@@ -14,6 +14,7 @@ import { ApartmentModule } from './apartments/apartments.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ApartmentModule,
     FavouritesModule,
     BookingsModule,
+    NewsModule,
 
     ThrottlerModule.forRoot({
       throttlers: [

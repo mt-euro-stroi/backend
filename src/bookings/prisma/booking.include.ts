@@ -4,14 +4,14 @@ export const bookingApartmentInclude = {
       id: true,
       number: true,
       complex: {
-        select: { title: true }
+        select: { title: true },
       },
       files: {
         select: { id: true, path: true },
-        orderBy: { createdAt: 'asc' }
-      }
-    }
-  }
+        orderBy: { createdAt: 'asc' },
+      },
+    },
+  },
 } as const;
 
 export const bookingInclude = {

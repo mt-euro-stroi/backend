@@ -1,38 +1,23 @@
-import { BookingStatus, ApartmentStatus } from 'src/generated/prisma/enums';
-import { File } from 'src/common/types/file.type';
+import { Prisma } from 'src/generated/prisma/client';
+import {
+  apartmentCardSelect,
+  bookingAdminSelect,
+  bookingListSelect,
+  bookingResponseSelect,
+} from '../prisma/booking.select';
 
-export interface BookingApartmentCard {
-  id: number;
-  entrance: number;
-  number: number;
-  rooms: number;
-  area: number;
-  floor: number;
-  price: number;
-  status: ApartmentStatus;
-  isPublished: boolean;
-  files: File[];
-}
+export type BookingApartmentCard = Prisma.ApartmentGetPayload<{
+  select: typeof apartmentCardSelect;
+}>;
 
-export interface BookingBase {
-  id: number;
-  status: BookingStatus;
-  createdAt: Date;
-  apartment: BookingApartmentCard;
-}
+export type BookingBase = Prisma.BookingGetPayload<{
+  select: typeof bookingListSelect;
+}>;
 
-export interface BookingResponse extends BookingBase {
-  userId: number;
-  apartmentId: number;
-}
+export type BookingResponse = Prisma.BookingGetPayload<{
+  select: typeof bookingResponseSelect;
+}>;
 
-export interface BookingAdminResponse extends BookingBase {
-  userId: number;
-  apartmentId: number;
-  user: {
-    id: number;
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
-}
+export type BookingAdminResponse = Prisma.BookingGetPayload<{
+  select: typeof bookingAdminSelect;
+}>;

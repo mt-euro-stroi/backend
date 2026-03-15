@@ -4,8 +4,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateComplexDto } from '../dto/create-complex.dto';
-import { UpdateComplexDto } from '../dto/update-complex.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
   PaginatedResult,
@@ -15,17 +13,113 @@ import {
 import {
   ComplexListItem,
   ComplexResponse,
-} from '../types/complex-response.types';
-import { AdminFindAllComplexesDto } from '../dto/admin-find-all-complexes.dto';
+} from './types/complex-response.types';
+import { PublicFindAllComplexesDto } from './dto/public-find-all-complexes.dto';
+import {
+  apartmentCardSelect,
+  complexFullSelect,
+  complexListSelect,
+} from './prisma/complex.select';
+import { CreateComplexDto } from './dto/create-complex.dto';
+import { AdminFindAllComplexesDto } from './dto/admin-find-all-complexes.dto';
+import { UpdateComplexDto } from './dto/update-complex.dto';
+import { UpdateComplexStatusDto } from './dto/update-complex-status.dto';
 import { removeUploadedFiles } from 'src/common/utils/remove-uploaded-files.util';
-import { UpdateComplexStatusDto } from '../dto/update-complex-status.dto';
-import { complexFilesInclude } from '../prisma/complex.include';
+import { mapApartmentCard } from './mappers/apartment-card.mapper';
 
 @Injectable()
-export class AdminComplexService {
-  private readonly logger = new Logger(AdminComplexService.name);
+export class ComplexService {
+  private readonly logger = new Logger(ComplexService.name);
 
   constructor(private readonly prismaService: PrismaService) {}
+
+  async findAll(
+    query: PublicFindAllComplexesDto,
+  ): Promise<ServiceDataResponse<PaginatedResult<ComplexListItem>>> {
+    const { page = 1, limit = 20, search } = query;
+
+    this.logger.log(
+      `Public complexes list request started (page=${page}, limit=${limit})`,
+    );
+
+    const skip = (page - 1) * limit;
+
+    const where = {
+      isPublished: true,
+      ...(search && {
+        OR: [
+          { title: { search } },
+          { city: { search } },
+          { address: { search } },
+        ],
+      }),
+    };
+
+    const [complexes, total] = await this.prismaService.$transaction([
+      this.prismaService.complex.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'asc' },
+        select: complexListSelect,
+      }),
+      this.prismaService.complex.count({ where }),
+    ]);
+
+    this.logger.log(
+      `Public complexes retrieved (items=${complexes.length}, total=${total})`,
+    );
+
+    return {
+      message: 'Комплексы успешно получены',
+      data: {
+        items: complexes,
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOne(slug: string): Promise<ServiceDataResponse<ComplexResponse>> {
+    this.logger.log(`Public complex get attempt started (slug=${slug})`);
+
+    const complex = await this.prismaService.complex.findUnique({
+      where: {
+        slug,
+      },
+      select: {
+        ...complexFullSelect,
+        apartments: {
+          where: { isPublished: true },
+          select: apartmentCardSelect,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!complex || !complex.isPublished) {
+      this.logger.warn(
+        `Public complex get failed: not found or unpublished (slug=${slug})`,
+      );
+      throw new NotFoundException('Комплекс не найден');
+    }
+
+    const formatted = complex.apartments.map(mapApartmentCard);
+
+    this.logger.log(
+      `Public complex retrieved successfully (id=${complex.id}, slug=${slug})`,
+    );
+
+    return {
+      message: 'Комплекс успешно получен',
+      data: {
+        ...complex,
+        apartments: formatted,
+      },
+    };
+  }
 
   async create(
     dto: CreateComplexDto,
@@ -51,7 +145,7 @@ export class AdminComplexService {
 
       return tx.complex.findUniqueOrThrow({
         where: { id: createdComplex.id },
-        include: complexFilesInclude,
+        select: complexListSelect,
       });
     });
 
@@ -65,7 +159,7 @@ export class AdminComplexService {
     };
   }
 
-  async findAll(
+  async findAllAdmin(
     query: AdminFindAllComplexesDto,
   ): Promise<ServiceDataResponse<PaginatedResult<ComplexListItem>>> {
     const { page = 1, limit = 20, search, isPublished } = query;
@@ -93,30 +187,19 @@ export class AdminComplexService {
         skip,
         take: limit,
         orderBy: { createdAt: 'asc' },
-        include: complexFilesInclude,
+        select: complexListSelect,
       }),
       this.prismaService.complex.count({ where }),
     ]);
 
-    const formattedComplexes = complexes.map((item) => ({
-      id: item.id,
-      title: item.title,
-      slug: item.slug,
-      city: item.city,
-      address: item.address,
-      priceFrom: item.priceFrom,
-      isPublished: item.isPublished,
-      files: item.files,
-    }));
-
     this.logger.log(
-      `Complexes retrieved successfully (items=${formattedComplexes.length}, total=${total}, page=${page})`,
+      `Complexes retrieved successfully (items=${complexes.length}, total=${total}, page=${page})`,
     );
 
     return {
       message: 'Комплексы успешно получены',
       data: {
-        items: formattedComplexes,
+        items: complexes,
         total,
         page,
         limit,
@@ -125,7 +208,7 @@ export class AdminComplexService {
     };
   }
 
-  async findOne(
+  async findOneAdmin(
     identifier: string,
   ): Promise<ServiceDataResponse<ComplexResponse>> {
     this.logger.log(`Complex get attempt started (identifier=${identifier})`);
@@ -134,27 +217,10 @@ export class AdminComplexService {
 
     const complex = await this.prismaService.complex.findUnique({
       where: isId ? { id: Number(identifier) } : { slug: identifier },
-      include: {
-        ...complexFilesInclude,
+      select: {
+        ...complexFullSelect,
         apartments: {
-          where: {
-            isPublished: true,
-          },
-          select: {
-            id: true,
-            entrance: true,
-            number: true,
-            rooms: true,
-            area: true,
-            floor: true,
-            price: true,
-            status: true,
-            isPublished: true,
-            files: {
-              select: { id: true, path: true },
-              orderBy: { createdAt: 'asc' as const },
-            },
-          },
+          select: apartmentCardSelect,
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -167,10 +233,7 @@ export class AdminComplexService {
       throw new NotFoundException('Комплекс не найден');
     }
 
-    const formattedApartments = complex.apartments.map((item) => ({
-      ...item,
-      area: Number(item.area),
-    }));
+    const formatted = complex.apartments.map(mapApartmentCard);
 
     this.logger.log(`Complex retrieved successfully (id=${complex.id})`);
 
@@ -178,7 +241,7 @@ export class AdminComplexService {
       message: 'Комплекс успешно получен',
       data: {
         ...complex,
-        apartments: formattedApartments,
+        apartments: formatted,
       },
     };
   }
@@ -188,7 +251,6 @@ export class AdminComplexService {
     dto: UpdateComplexDto,
     newFiles: string[],
   ): Promise<ServiceDataResponse<ComplexListItem>> {
-
     this.logger.log(`Complex update attempt started (id=${id})`);
 
     const complex = await this.prismaService.complex.findUnique({
@@ -228,7 +290,6 @@ export class AdminComplexService {
     }
 
     const updatedComplex = await this.prismaService.$transaction(async (tx) => {
-
       const updated = await tx.complex.update({
         where: { id },
         data: updateData,
@@ -254,7 +315,7 @@ export class AdminComplexService {
 
       return tx.complex.findUniqueOrThrow({
         where: { id: updated.id },
-        include: complexFilesInclude,
+        select: complexListSelect,
       });
     });
 
@@ -274,7 +335,6 @@ export class AdminComplexService {
     id: number,
     dto: UpdateComplexStatusDto,
   ): Promise<ServiceDataResponse<ComplexListItem>> {
-
     const { isPublished } = dto;
 
     this.logger.log(
@@ -294,7 +354,7 @@ export class AdminComplexService {
     if (existingComplex.isPublished === isPublished) {
       const complex = await this.prismaService.complex.findUniqueOrThrow({
         where: { id },
-        include: complexFilesInclude,
+        select: complexListSelect,
       });
 
       return {
@@ -306,7 +366,7 @@ export class AdminComplexService {
     const updatedComplex = await this.prismaService.complex.update({
       where: { id },
       data: { isPublished },
-      include: complexFilesInclude,
+      select: complexListSelect,
     });
 
     this.logger.log(
@@ -323,7 +383,6 @@ export class AdminComplexService {
     this.logger.log(`Complex delete attempt started (id=${id})`);
 
     const { filePaths } = await this.prismaService.$transaction(async (tx) => {
-
       const complex = await tx.complex.findUnique({
         where: { id },
         include: {

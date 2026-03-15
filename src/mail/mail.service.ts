@@ -110,7 +110,7 @@ export class MailService {
       </tr>
     </table>
     `;
-    
+
     return this.sendEmail({
       to: email,
       subject,

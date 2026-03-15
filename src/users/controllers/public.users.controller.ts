@@ -16,21 +16,21 @@ import {
 import { CurrentUser } from 'src/common/decorators/auth-user.decorator';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import type { AuthUser } from 'src/common/types/auth-user.type';
-import { PublicUsersService } from './public.users.service';
+import { UsersService } from '../users.service';
 import { UpdateUserDto } from '../dto/update-user.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth('bearer')
 @Controller('users')
 export class PublicUsersController {
-  constructor(private readonly publicUsersService: PublicUsersService) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Получить профиль текущего пользователя' })
   @ApiResponse({ status: 200, description: 'Профиль пользователя' })
-  async findMe(@CurrentUser() user: AuthUser) {
-    return this.publicUsersService.findMe(user);
+  async getMe(@CurrentUser() user: AuthUser) {
+    return this.usersService.getMe(user);
   }
 
   @Patch('me')
@@ -39,14 +39,14 @@ export class PublicUsersController {
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'Профиль обновлён' })
   async updateMe(@Body() dto: UpdateUserDto, @CurrentUser() user: AuthUser) {
-    return this.publicUsersService.updateMe(dto, user);
+    return this.usersService.updateMe(dto, user);
   }
 
   @Delete('me')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Удалить свой аккаунт' })
   @ApiResponse({ status: 200, description: 'Аккаунт удалён' })
-  async removeMe(@CurrentUser() user: AuthUser) {
-    return this.publicUsersService.removeMe(user);
+  async deleteMe(@CurrentUser() user: AuthUser) {
+    return this.usersService.deleteMe(user);
   }
 }

@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -10,19 +11,123 @@ import {
   ServiceDataResponse,
   ServiceMessageResponse,
 } from 'src/common/types/service-response.types';
-import { UserListItem, UserResponse } from '../types/users-response.types';
-import { FindAllUsersDto } from '../dto/find-all-users.dto';
-import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
-import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
-import { AuthUser } from 'src/common/types/auth-user.type';
+import type { AuthUser } from 'src/common/types/auth-user.type';
+import { UserListItem, UserResponse } from './types/users-response.types';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from 'src/generated/prisma/enums';
-import { userFullSelect, userListSelect } from '../prisma/user.select';
+import { userFullSelect, userListSelect } from './prisma/user.select';
+import { FindAllUsersDto } from './dto/find-all-users.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Injectable()
-export class AdminUsersService {
-  private readonly logger = new Logger(AdminUsersService.name);
+export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
 
   constructor(private readonly prismaService: PrismaService) {}
+
+  async getMe(authUser: AuthUser): Promise<ServiceDataResponse<UserResponse>> {
+    const userId = authUser.sub;
+
+    this.logger.log(`User profile request started (userId=${userId})`);
+
+    const user = await this.prismaService.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: userFullSelect,
+    });
+
+    this.logger.log(`User profile retrieved successfully (userId=${userId})`);
+
+    return {
+      message: 'Пользователь успешно получен',
+      data: user,
+    };
+  }
+
+  async updateMe(
+    dto: UpdateUserDto,
+    authUser: AuthUser,
+  ): Promise<ServiceDataResponse<UserResponse>> {
+    const userId = authUser.sub;
+
+    this.logger.log(`User update request started (userId=${userId})`);
+
+    const user = await this.prismaService.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+
+    let resetEmailVerified = false;
+
+    if (dto.email && dto.email !== user.email) {
+      const existingEmail = await this.prismaService.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingEmail) {
+        this.logger.warn(
+          `User update failed: email already exists (userId=${userId})`,
+        );
+        throw new ConflictException('Email уже используется');
+      }
+
+      resetEmailVerified = true;
+    }
+
+    if (dto.phone && dto.phone !== user.phone) {
+      const existingPhone = await this.prismaService.user.findUnique({
+        where: { phone: dto.phone },
+      });
+
+      if (existingPhone) {
+        this.logger.warn(
+          `User update failed: phone already exists (userId=${userId})`,
+        );
+        throw new ConflictException('Номер телефона уже используется');
+      }
+    }
+
+    const updatedUser = await this.prismaService.user.update({
+      where: { id: userId },
+      data: {
+        ...dto,
+        ...(resetEmailVerified && { isEmailVerified: false }),
+      },
+      select: userFullSelect,
+    });
+
+    this.logger.log(`User updated successfully (userId=${userId})`);
+
+    return {
+      message: 'Пользователь успешно обновлен',
+      data: updatedUser,
+    };
+  }
+
+  async deleteMe(authUser: AuthUser): Promise<ServiceMessageResponse> {
+    const userId = authUser.sub;
+
+    this.logger.log(`User delete request started (userId=${userId})`);
+
+    const user = await this.prismaService.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    if (user.role === Role.ADMIN) {
+      this.logger.warn(`Admin self-deletion blocked (adminId=${userId})`);
+      throw new ForbiddenException(
+        'Админ не может удалить свою учетную запись',
+      );
+    }
+
+    await this.prismaService.user.delete({
+      where: { id: userId },
+    });
+
+    this.logger.warn(`User account deleted (userId=${userId})`);
+
+    return { message: 'Пользователь успешно удален' };
+  }
 
   async findAll(
     query: FindAllUsersDto,
@@ -72,7 +177,7 @@ export class AdminUsersService {
     };
   }
 
-  async findOneById(id: number): Promise<ServiceDataResponse<UserResponse>> {
+  async findOne(id: number): Promise<ServiceDataResponse<UserResponse>> {
     this.logger.log(`Admin user lookup started (targetUserId=${id})`);
 
     const user = await this.prismaService.user.findUnique({
@@ -121,7 +226,9 @@ export class AdminUsersService {
       this.logger.warn(
         `Admin role update blocked: attempt to change own role (adminId=${userId})`,
       );
-      throw new ForbiddenException('Вы не можете изменить свою собственную роль');
+      throw new ForbiddenException(
+        'Вы не можете изменить свою собственную роль',
+      );
     }
 
     if (existingUser.role === Role.ADMIN && role !== Role.ADMIN) {
@@ -181,7 +288,9 @@ export class AdminUsersService {
       this.logger.warn(
         `Admin status update blocked: attempt to deactivate own account (adminId=${userId})`,
       );
-      throw new ForbiddenException('Вы не можете деактивировать свою собственную учетную запись');
+      throw new ForbiddenException(
+        'Вы не можете деактивировать свою собственную учетную запись',
+      );
     }
 
     if (existingUser.role === Role.ADMIN && isActive === false) {
@@ -218,7 +327,7 @@ export class AdminUsersService {
     };
   }
 
-  async removeUserByAdmin(
+  async deleteUser(
     id: number,
     authUser: AuthUser,
   ): Promise<ServiceMessageResponse> {
@@ -242,7 +351,9 @@ export class AdminUsersService {
 
     if (id === adminId) {
       this.logger.warn(`Admin self-deletion blocked (adminId=${adminId})`);
-      throw new ForbiddenException('Вы не можете удалить свою собственную учетную запись');
+      throw new ForbiddenException(
+        'Вы не можете удалить свою собственную учетную запись',
+      );
     }
 
     if (targetUser.role === Role.ADMIN) {

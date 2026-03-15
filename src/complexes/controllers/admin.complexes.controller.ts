@@ -12,7 +12,7 @@ import {
   UseInterceptors,
   UploadedFiles,
 } from '@nestjs/common';
-import { AdminComplexService } from './admin.complexes.service';
+import { ComplexService } from '../complexes.service';
 import { CreateComplexDto } from '../dto/create-complex.dto';
 import { UpdateComplexDto } from '../dto/update-complex.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
@@ -37,7 +37,7 @@ import {
 @Controller('admin/complexes')
 @UseGuards(AuthGuard, AdminGuard)
 export class AdminComplexController {
-  constructor(private readonly adminComplexService: AdminComplexService) {}
+  constructor(private readonly complexService: ComplexService) {}
 
   @Post()
   @UseInterceptors(
@@ -51,7 +51,7 @@ export class AdminComplexController {
     @Body() dto: CreateComplexDto,
     @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
   ) {
-    return this.adminComplexService.create(
+    return this.complexService.create(
       dto,
       files.map((item) => item.filename),
     );
@@ -60,8 +60,8 @@ export class AdminComplexController {
   @Get()
   @ApiOperation({ summary: 'Админ: список комплексов' })
   @ApiResponse({ status: 200, description: 'Список комплексов' })
-  async findAll(@Query() query: AdminFindAllComplexesDto) {
-    return this.adminComplexService.findAll(query);
+  async findAllAdmin(@Query() query: AdminFindAllComplexesDto) {
+    return this.complexService.findAllAdmin(query);
   }
 
   @Get(':identifier')
@@ -74,8 +74,8 @@ export class AdminComplexController {
     description: 'ID или slug комплекса',
   })
   @ApiResponse({ status: 200, description: 'Детали комплекса' })
-  async findOneBySlug(@Param('identifier') identifier: string) {
-    return this.adminComplexService.findOne(identifier);
+  async findOneAdmin(@Param('identifier') identifier: string) {
+    return this.complexService.findOneAdmin(identifier);
   }
 
   @Patch(':id')
@@ -92,7 +92,7 @@ export class AdminComplexController {
     @Body() dto: UpdateComplexDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return this.adminComplexService.update(
+    return this.complexService.update(
       id,
       dto,
       files?.map((item) => item.filename) ?? [],
@@ -108,7 +108,7 @@ export class AdminComplexController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateComplexStatusDto,
   ) {
-    return this.adminComplexService.updateStatus(id, dto);
+    return this.complexService.updateStatus(id, dto);
   }
 
   @Delete(':id')
@@ -116,6 +116,6 @@ export class AdminComplexController {
   @ApiParam({ name: 'id', type: 'number', description: 'ID комплекса' })
   @ApiResponse({ status: 200, description: 'Комплекс удален' })
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.adminComplexService.remove(id);
+    return this.complexService.remove(id);
   }
 }

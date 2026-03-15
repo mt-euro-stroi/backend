@@ -9,7 +9,7 @@ import {
   Patch,
   Body,
 } from '@nestjs/common';
-import { AdminBookingsService } from './admin.bookings.service';
+import { BookingsService } from '../bookings.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { AdminFindAllBookingsDto } from '../dto/admin-find-all-bookings.dto';
 import { AdminGuard } from 'src/common/guards/admin.guard';
@@ -28,13 +28,13 @@ import {
 @Controller('admin/bookings')
 @UseGuards(AuthGuard, AdminGuard)
 export class AdminBookingsController {
-  constructor(private readonly adminBookingsService: AdminBookingsService) {}
+  constructor(private readonly bookingsService: BookingsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Админ: получить список бронирований' })
   @ApiResponse({ status: 200, description: 'Список бронирований' })
-  async findAll(@Query() query: AdminFindAllBookingsDto) {
-    return this.adminBookingsService.findAll(query);
+  async findAllAdmin(@Query() query: AdminFindAllBookingsDto) {
+    return this.bookingsService.findAllAdmin(query);
   }
 
   @Get(':id')
@@ -42,7 +42,7 @@ export class AdminBookingsController {
   @ApiParam({ name: 'id', type: 'number', description: 'ID бронирования' })
   @ApiResponse({ status: 200, description: 'Бронирование' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.adminBookingsService.findOne(id);
+    return this.bookingsService.findOne(id);
   }
 
   @Patch(':id/status')
@@ -54,14 +54,14 @@ export class AdminBookingsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateBookingStatusDto,
   ) {
-    return this.adminBookingsService.updateStatus(id, dto);
+    return this.bookingsService.updateStatus(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Админ: удалить бронирование' })
   @ApiParam({ name: 'id', type: 'number', description: 'ID бронирования' })
   @ApiResponse({ status: 200, description: 'Бронирование удалено' })
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.adminBookingsService.remove(id);
+  async removeAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.bookingsService.removeAdmin(id);
   }
 }

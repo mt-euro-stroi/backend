@@ -8,7 +8,7 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { PublicBookingsService } from './public.bookings.service';
+import { BookingsService } from '../bookings.service';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { CurrentUser } from 'src/common/decorators/auth-user.decorator';
 import { AuthGuard } from 'src/common/guards/auth.guard';
@@ -26,7 +26,7 @@ import {
 @ApiBearerAuth('bearer')
 @Controller('bookings')
 export class PublicBookingsController {
-  constructor(private readonly publicBookingsService: PublicBookingsService) {}
+  constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
   @UseGuards(AuthGuard)
@@ -34,7 +34,7 @@ export class PublicBookingsController {
   @ApiBody({ type: CreateBookingDto })
   @ApiResponse({ status: 201, description: 'Бронирование создано' })
   async create(@Body() dto: CreateBookingDto, @CurrentUser() user: AuthUser) {
-    return this.publicBookingsService.create(dto, user);
+    return this.bookingsService.create(dto, user);
   }
 
   @Get()
@@ -42,7 +42,7 @@ export class PublicBookingsController {
   @ApiOperation({ summary: 'Список бронирований текущего пользователя' })
   @ApiResponse({ status: 200, description: 'Список бронирований' })
   async findAll(@CurrentUser() user: AuthUser) {
-    return this.publicBookingsService.findAll(user);
+    return this.bookingsService.findAll(user);
   }
 
   @Delete(':id')
@@ -54,6 +54,6 @@ export class PublicBookingsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.publicBookingsService.remove(id, user);
+    return this.bookingsService.remove(id, user);
   }
 }

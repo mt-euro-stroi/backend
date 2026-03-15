@@ -12,6 +12,8 @@ export class VerifyEmailDto extends EmailDto {
     maxLength: 6,
   })
   @Transform(({ value }) => value?.trim())
-  @Matches(/^\d+$/, { message: 'Код подтверждения должен состоять ровно из 6 цифр' })
+  @Matches(/^\d+$/, {
+    message: 'Код подтверждения должен состоять ровно из 6 цифр',
+  })
   verificationCode: string;
 }

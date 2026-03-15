@@ -12,7 +12,7 @@ import {
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
-import { AdminApartmentService } from './admin.apartments.service';
+import { ApartmentService } from '../apartments.service';
 import { CreateApartmentDto } from '../dto/create-apartment.dto';
 import { UpdateApartmentDto } from '../dto/update-apartment.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
@@ -38,7 +38,7 @@ import {
 @Controller('admin/apartments')
 @UseGuards(AuthGuard, AdminGuard)
 export class AdminApartmentController {
-  constructor(private readonly adminApartmentService: AdminApartmentService) {}
+  constructor(private readonly apartmentService: ApartmentService) {}
 
   @Post()
   @UseInterceptors(
@@ -68,7 +68,7 @@ export class AdminApartmentController {
     @Body() dto: CreateApartmentDto,
     @UploadedFiles(RequiredFilesPipe) files: Express.Multer.File[],
   ) {
-    return this.adminApartmentService.create(
+    return this.apartmentService.create(
       dto,
       files.map((item) => item.filename),
     );
@@ -90,7 +90,7 @@ export class AdminApartmentController {
     description: 'Недостаточно прав (требуется admin)',
   })
   async findAll(@Query() query: AdminFindAllApartmentsDto) {
-    return this.adminApartmentService.findAll(query);
+    return this.apartmentService.findAllAdmin(query);
   }
 
   @Get(':id')
@@ -117,7 +117,7 @@ export class AdminApartmentController {
     description: 'Недостаточно прав (требуется admin)',
   })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.adminApartmentService.findOne(id);
+    return this.apartmentService.findOneAdmin(id);
   }
 
   @Patch(':id')
@@ -153,7 +153,7 @@ export class AdminApartmentController {
     @Body() dto: UpdateApartmentDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return this.adminApartmentService.update(
+    return this.apartmentService.update(
       id,
       dto,
       files?.map((item) => item.filename) ?? [],
@@ -187,7 +187,7 @@ export class AdminApartmentController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateApartmentStatusDto,
   ) {
-    return this.adminApartmentService.updateStatus(id, dto);
+    return this.apartmentService.updateStatus(id, dto);
   }
 
   @Delete(':id')
@@ -214,6 +214,6 @@ export class AdminApartmentController {
     description: 'Недостаточно прав (требуется admin)',
   })
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.adminApartmentService.remove(id);
+    return this.apartmentService.remove(id);
   }
 }

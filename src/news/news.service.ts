@@ -4,23 +4,23 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 
 @Injectable()
 export class NewsService {
-  create(createNewsDto: CreateNewsDto) {
+  async create(createNewsDto: CreateNewsDto) {
     return 'This action adds a new news';
   }
 
-  findAll() {
+  async findAll() {
     return `This action returns all news`;
   }
 
-  findOne(id: number) {
+  async findOne(id: number) {
     return `This action returns a #${id} news`;
   }
 
-  update(id: number, updateNewsDto: UpdateNewsDto) {
+  async update(id: number, updateNewsDto: UpdateNewsDto) {
     return `This action updates a #${id} news`;
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     return `This action removes a #${id} news`;
   }
 }

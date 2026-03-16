@@ -4,22 +4,25 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateBookingDto } from '../dto/create-booking.dto';
+import { CreateBookingDto } from './dto/create-booking.dto';
 import { AuthUser } from 'src/common/types/auth-user.type';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
+  PaginatedResult,
   ServiceDataResponse,
   ServiceMessageResponse,
 } from 'src/common/types/service-response.types';
-import { BookingBase, BookingResponse } from '../types/bookings-response.types';
+import { BookingAdminResponse, BookingBase, BookingResponse } from './types/bookings-response.types';
 import { ApartmentStatus, BookingStatus } from 'src/generated/prisma/enums';
-import { mapBookingApartment } from '../mappers/booking.mapper';
+import { mapBookingApartment } from './mappers/booking.mapper';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   bookingAdminSelect,
   bookingListSelect,
   bookingResponseSelect,
 } from './prisma/booking.select';
+import { AdminFindAllBookingsDto } from './dto/admin-find-all-bookings.dto';
+import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 
 @Injectable()
 export class BookingsService {

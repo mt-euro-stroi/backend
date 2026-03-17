@@ -1,15 +1,10 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
-  Patch,
   Param,
-  Delete,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { NewsService } from '../news.service';
-import { CreateNewsDto } from '../dto/create-news.dto';
-import { UpdateNewsDto } from '../dto/update-news.dto';
 
 @Controller('news')
 export class PublicNewsController {
@@ -21,7 +16,7 @@ export class PublicNewsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.newsService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.newsService.findOne(id);
   }
 }

@@ -39,7 +39,7 @@ jobs:
             npm run build
 
             echo "Restarting application..."
-            pm2 restart backend || pm2 start dist/main.js --name backend
+            pm2 restart backend || pm2 start dist/src/main.js --name backend
 
             echo "Saving PM2 state..."
             pm2 save

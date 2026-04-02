@@ -15,9 +15,13 @@ import { FavouritesModule } from './favourites/favourites.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NewsModule } from './news/news.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -29,6 +33,8 @@ import { NewsModule } from './news/news.module';
     ComplexModule,
     ApartmentModule,
     FavouritesModule,
+    BookingsModule,
+    NewsModule,
 
     ThrottlerModule.forRoot({
       throttlers: [
@@ -39,7 +45,6 @@ import { NewsModule } from './news/news.module';
       ],
     }),
     ScheduleModule.forRoot(),
-    NewsModule,
   ],
   controllers: [AppController],
   providers: [

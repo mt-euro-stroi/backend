@@ -12,7 +12,11 @@ import {
   ServiceDataResponse,
   ServiceMessageResponse,
 } from 'src/common/types/service-response.types';
-import { BookingAdminResponse, BookingBase, BookingResponse } from './types/bookings-response.types';
+import {
+  BookingAdminResponse,
+  BookingBase,
+  BookingResponse,
+} from './types/bookings-response.types';
 import { ApartmentStatus, BookingStatus } from 'src/generated/prisma/enums';
 import { mapBookingApartment } from './mappers/booking.mapper';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -21,6 +25,7 @@ import {
   bookingListSelect,
   bookingResponseSelect,
 } from './prisma/booking.select';
+import { MailService } from 'src/mail/mail.service';
 import { AdminFindAllBookingsDto } from './dto/admin-find-all-bookings.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 
@@ -28,7 +33,10 @@ import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
 
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async create(
     dto: CreateBookingDto,
@@ -374,11 +382,18 @@ export class BookingsService {
         where: { id },
         select: {
           apartmentId: true,
+          status: true,
         },
       });
 
       if (!booking) {
         throw new NotFoundException('Бронь не найдена');
+      }
+
+      if (booking.status === BookingStatus.CONFIRMED) {
+        throw new ConflictException(
+          'Нельзя удалить подтвержденную бронь. Сначала отмените её',
+        );
       }
 
       await tx.booking.delete({

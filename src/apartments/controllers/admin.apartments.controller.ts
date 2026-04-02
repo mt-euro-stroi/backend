@@ -89,7 +89,7 @@ export class AdminApartmentController {
   @ApiForbiddenResponse({
     description: 'Недостаточно прав (требуется admin)',
   })
-  async findAll(@Query() query: AdminFindAllApartmentsDto) {
+  async findAllAdmin(@Query() query: AdminFindAllApartmentsDto) {
     return this.apartmentService.findAllAdmin(query);
   }
 
@@ -116,7 +116,7 @@ export class AdminApartmentController {
   @ApiForbiddenResponse({
     description: 'Недостаточно прав (требуется admin)',
   })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOneAdmin(@Param('id', ParseIntPipe) id: number) {
     return this.apartmentService.findOneAdmin(id);
   }
 

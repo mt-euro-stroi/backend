@@ -18,7 +18,7 @@ export class PublicComplexController {
   @Get(':slug')
   @ApiOperation({ summary: 'Детали комплекса по slug' })
   @ApiResponse({ status: 200, description: 'Детали комплекса' })
-  async findOneBySlug(@Param('slug') slug: string) {
+  async findOne(@Param('slug') slug: string) {
     return this.complexService.findOne(slug);
   }
 }

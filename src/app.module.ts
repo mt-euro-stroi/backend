@@ -15,9 +15,13 @@ import { FavouritesModule } from './favourites/favourites.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NewsModule } from './news/news.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     PrismaModule,
     UsersModule,
     AuthModule,

@@ -35,7 +35,6 @@ import { ConfigModule } from '@nestjs/config';
     FavouritesModule,
     BookingsModule,
     NewsModule,
-
     ThrottlerModule.forRoot({
       throttlers: [
         {

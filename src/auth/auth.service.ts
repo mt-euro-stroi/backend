@@ -23,6 +23,7 @@ import { User } from 'src/generated/prisma/client';
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+
   private readonly VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000;
   private readonly RESEND_COOLDOWN_MS = 60_000;
 
@@ -52,23 +53,13 @@ export class AuthService {
 
     const { phone, email, password } = dto;
 
-    const byPhone = await this.prismaService.user.findUnique({
-      where: { phone },
-    });
+    const [byPhone, byEmail] = await Promise.all([
+      this.prismaService.user.findUnique({ where: { phone } }),
+      this.prismaService.user.findUnique({ where: { email } }),
+    ]);
 
-    if (byPhone) {
-      this.logger.warn('Sign up conflict: phone already exists');
-      throw new ConflictException(
-        'Пользователь с таким email или номером телефона уже существует',
-      );
-    }
-
-    const byEmail = await this.prismaService.user.findUnique({
-      where: { email },
-    });
-
-    if (byEmail) {
-      this.logger.warn('Sign up conflict: email already exists');
+    if (byPhone || byEmail) {
+      this.logger.warn('Sign up conflict: user already exists');
       throw new ConflictException(
         'Пользователь с таким email или номером телефона уже существует',
       );
@@ -137,6 +128,9 @@ export class AuthService {
         now.getTime() - user.verificationCodeSentAt.getTime() <
           this.RESEND_COOLDOWN_MS
       ) {
+        this.logger.warn(
+          `Sign in blocked: email not verified, resend cooldown active (userId=${user.id})`,
+        );
         throw new ConflictException(
           'Email не подтвержден. Пожалуйста, проверьте свой email',
         );
@@ -157,7 +151,7 @@ export class AuthService {
       this.sendVerificationCode(user.email, verificationCode);
 
       throw new ConflictException(
-        'Email не подтверждена. Вам отправлен новый код подтверждения',
+        'Email не подтвержден. Вам отправлен новый код подтверждения',
       );
     }
 

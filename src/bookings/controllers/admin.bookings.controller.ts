@@ -34,7 +34,7 @@ export class AdminBookingsController {
   @ApiOperation({ summary: 'Админ: получить список бронирований' })
   @ApiResponse({ status: 200, description: 'Список бронирований' })
   async findAllAdmin(@Query() query: AdminFindAllBookingsDto) {
-    return this.bookingsService.findAllAdmin(query);
+    return await this.bookingsService.findAllAdmin(query);
   }
 
   @Get(':id')
@@ -42,7 +42,7 @@ export class AdminBookingsController {
   @ApiParam({ name: 'id', type: 'number', description: 'ID бронирования' })
   @ApiResponse({ status: 200, description: 'Бронирование' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.bookingsService.findOne(id);
+    return await this.bookingsService.findOne(id);
   }
 
   @Patch(':id/status')
@@ -54,7 +54,7 @@ export class AdminBookingsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateBookingStatusDto,
   ) {
-    return this.bookingsService.updateStatus(id, dto);
+    return await this.bookingsService.updateStatus(id, dto);
   }
 
   @Delete(':id')
@@ -62,6 +62,6 @@ export class AdminBookingsController {
   @ApiParam({ name: 'id', type: 'number', description: 'ID бронирования' })
   @ApiResponse({ status: 200, description: 'Бронирование удалено' })
   async removeAdmin(@Param('id', ParseIntPipe) id: number) {
-    return this.bookingsService.removeAdmin(id);
+    return await this.bookingsService.removeAdmin(id);
   }
 }

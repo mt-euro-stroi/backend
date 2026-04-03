@@ -37,7 +37,7 @@ export class AdminUsersController {
   @ApiOperation({ summary: 'Админ: получить список пользователей' })
   @ApiResponse({ status: 200, description: 'Список пользователей' })
   async findAll(@Query() query: FindAllUsersDto) {
-    return this.usersService.findAll(query);
+    return await this.usersService.findAll(query);
   }
 
   @Get(':id')
@@ -45,7 +45,7 @@ export class AdminUsersController {
   @ApiParam({ name: 'id', type: 'number', description: 'ID пользователя' })
   @ApiResponse({ status: 200, description: 'Пользователь' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOne(id);
+    return await this.usersService.findOne(id);
   }
 
   @Patch(':id/role')
@@ -58,7 +58,7 @@ export class AdminUsersController {
     @Body() dto: UpdateUserRoleDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.usersService.updateRole(id, dto, user);
+    return await this.usersService.updateRole(id, dto, user);
   }
 
   @Patch(':id/status')
@@ -71,7 +71,7 @@ export class AdminUsersController {
     @Body() dto: UpdateUserStatusDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.usersService.updateStatus(id, dto, user);
+    return await this.usersService.updateStatus(id, dto, user);
   }
 
   @Delete(':id')
@@ -82,6 +82,6 @@ export class AdminUsersController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.usersService.deleteUser(id, user);
+    return await this.usersService.deleteUser(id, user);
   }
 }

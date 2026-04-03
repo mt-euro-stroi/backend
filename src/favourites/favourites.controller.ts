@@ -36,7 +36,7 @@ export class FavouritesController {
   @ApiBody({ type: CreateFavouriteDto })
   @ApiResponse({ status: 201, description: 'Квартира добавлена в избранное' })
   async create(@Body() dto: CreateFavouriteDto, @CurrentUser() user: AuthUser) {
-    return this.favouritesService.create(dto, user);
+    return await this.favouritesService.create(dto, user);
   }
 
   @Get()
@@ -47,7 +47,7 @@ export class FavouritesController {
     @Query() query: FindAllFavouritesDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.favouritesService.findAll(query, user);
+    return await this.favouritesService.findAll(query, user);
   }
 
   @Delete(':id')
@@ -63,6 +63,6 @@ export class FavouritesController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.favouritesService.remove(id, user);
+    return await this.favouritesService.remove(id, user);
   }
 }

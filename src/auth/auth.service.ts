@@ -52,23 +52,13 @@ export class AuthService {
 
     const { phone, email, password } = dto;
 
-    const byPhone = await this.prismaService.user.findUnique({
-      where: { phone },
-    });
+    const [byPhone, byEmail] = await Promise.all([
+      this.prismaService.user.findUnique({ where: { phone } }),
+      this.prismaService.user.findUnique({ where: { email } }),
+    ]);
 
-    if (byPhone) {
-      this.logger.warn('Sign up conflict: phone already exists');
-      throw new ConflictException(
-        'Пользователь с таким email или номером телефона уже существует',
-      );
-    }
-
-    const byEmail = await this.prismaService.user.findUnique({
-      where: { email },
-    });
-
-    if (byEmail) {
-      this.logger.warn('Sign up conflict: email already exists');
+    if (byPhone || byEmail) {
+      this.logger.warn('Sign up conflict: user already exists');
       throw new ConflictException(
         'Пользователь с таким email или номером телефона уже существует',
       );

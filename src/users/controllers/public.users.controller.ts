@@ -39,7 +39,7 @@ export class PublicUsersController {
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'Профиль обновлён' })
   async updateMe(@Body() dto: UpdateUserDto, @CurrentUser() user: AuthUser) {
-    return this.usersService.updateMe(dto, user);
+    return await this.usersService.updateMe(dto, user);
   }
 
   @Delete('me')
@@ -47,6 +47,6 @@ export class PublicUsersController {
   @ApiOperation({ summary: 'Удалить свой аккаунт' })
   @ApiResponse({ status: 200, description: 'Аккаунт удалён' })
   async deleteMe(@CurrentUser() user: AuthUser) {
-    return this.usersService.deleteMe(user);
+    return await this.usersService.deleteMe(user);
   }
 }

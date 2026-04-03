@@ -45,7 +45,7 @@ export class AuthController {
     description: 'Email уже зарегистрирован',
   })
   async signUp(@Body() dto: SignUpDto) {
-    return this.authService.signUp(dto);
+    return await this.authService.signUp(dto);
   }
 
   @Post('sign-in')
@@ -73,7 +73,7 @@ export class AuthController {
     description: 'Email не подтвержден',
   })
   async signIn(@Body() dto: SignInDto) {
-    return this.authService.signIn(dto);
+    return await this.authService.signIn(dto);
   }
 
   @Post('verify-email')
@@ -89,7 +89,7 @@ export class AuthController {
     description: 'Неверный или истекший код подтверждения',
   })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(dto);
+    return await this.authService.verifyEmail(dto);
   }
 
   @Post('resend-verification-code')
@@ -105,7 +105,7 @@ export class AuthController {
     description: 'Email не найден или уже подтвержден',
   })
   async resendVerificationCode(@Body() dto: ResendVerificationCodeDto) {
-    return this.authService.resendVerificationCode(dto);
+    return await this.authService.resendVerificationCode(dto);
   }
 
   @Patch('change-password')
@@ -128,6 +128,6 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.authService.changePassword(dto, user);
+    return await this.authService.changePassword(dto, user);
   }
 }
